@@ -143,7 +143,24 @@ async function initPopup() {
             }
           });
         } else {
-          showActiveState(videoState);
+          // We got the video state from the subframe!
+          // Query the top-frame (frame 0) to get the clean page title and cover thumbnail as fallback/upgrade
+          if (activeFrameId !== 0) {
+            chrome.tabs.sendMessage(tab.id, { action: "GET_VIDEO_STATE" }, { frameId: 0 }, (topState) => {
+              if (!chrome.runtime.lastError && topState && topState.found) {
+                // Merge the top-frame's high-quality metadata thumbnail and title!
+                if (topState.thumbnail && !topState.thumbnail.startsWith('data:image')) {
+                  videoState.thumbnail = topState.thumbnail;
+                }
+                if (topState.title && topState.title !== "Video" && topState.title !== "Active Video") {
+                  videoState.title = topState.title;
+                }
+              }
+              showActiveState(videoState);
+            });
+          } else {
+            showActiveState(videoState);
+          }
         }
       });
     });

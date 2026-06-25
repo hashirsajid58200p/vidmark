@@ -87,20 +87,62 @@
 
     const scoredVideos = videos.map(v => {
       const isPlaying = !v.paused && !v.ended;
-      const size = v.offsetWidth * v.offsetHeight;
-      const hasDuration = (v.duration && !isNaN(v.duration) && v.duration > 0);
-      const hasCurrentTime = (v.currentTime && !isNaN(v.currentTime) && v.currentTime > 0);
+      const width = v.offsetWidth || v.videoWidth || 0;
+      const height = v.offsetHeight || v.videoHeight || 0;
+      const size = width * height;
+      const duration = (v.duration && !isNaN(v.duration)) ? v.duration : 0;
+      const currentTime = (v.currentTime && !isNaN(v.currentTime)) ? v.currentTime : 0;
       
-      let score = size;
-      if (isPlaying) score += 1000000;
-      if (hasDuration) score += 50000;
-      if (hasCurrentTime) score += 10000;
+      let score = 0;
+      
+      // If the video is extremely small (like tracking pixels or hidden elements), penalize it heavily
+      if (width < 10 || height < 10) {
+        score -= 10000000;
+      }
+      
+      // Duration is the primary indicator of content vs ads/loops
+      if (duration > 45) {
+        score += 2000000; // Big bonus for real content
+      }
+      
+      score += duration * 100; // Longer videos get higher score
+      
+      if (isPlaying) {
+        score += 500000; // Bonus if currently playing
+      }
+      
+      score += size; // Larger layout gets higher score
+      
+      if (currentTime > 0) {
+        score += 50000; // Bonus if user has interacted/played it
+      }
       
       return { video: v, score };
     });
 
     scoredVideos.sort((a, b) => b.score - a.score);
     return scoredVideos[0].video;
+  }
+
+  // Check if a video element is likely the main content video on the page
+  function isMainVideo(video) {
+    if (!video) return false;
+    
+    const width = video.offsetWidth || video.videoWidth || 0;
+    const height = video.offsetHeight || video.videoHeight || 0;
+    const duration = video.duration;
+    
+    // If duration is loaded and <= 45 seconds, it is likely an ad/preview, do not register!
+    if (duration && !isNaN(duration) && duration <= 45) {
+      return false;
+    }
+    
+    // If it's too small (width < 200 or height < 100), do not register!
+    if (width > 0 && height > 0 && (width < 200 || height < 100)) {
+      return false;
+    }
+    
+    return true;
   }
 
   // Capture current video frame using Canvas API (CORS handled)
@@ -182,7 +224,7 @@
           continue;
         }
         
-        if (el.tagName === 'DIV' || el.tagName === 'SPAN') {
+        if (el.tagName === 'DIV' || el.tagName === 'SPAN' || el.tagName === 'INPUT') {
           return el;
         }
       }
@@ -224,8 +266,13 @@
 
   // Get native progress bar OR create a custom invisible timeline container
   function getOrCreateUniversalTimeline(video) {
-    const nativeTimeline = findNativeTimeline();
+    let nativeTimeline = findNativeTimeline();
     if (nativeTimeline) {
+      // If the matched progress bar is an INPUT tag (e.g. Plyr <input type="range">),
+      // we must use its parent container because inputs cannot have child elements in HTML.
+      if (nativeTimeline.tagName === 'INPUT') {
+        nativeTimeline = nativeTimeline.parentElement;
+      }
       clearUniversalTimeline();
       return nativeTimeline;
     }
@@ -323,7 +370,10 @@
   }
 
   function handleVideoStateChange() {
-    registerVideoFrame();
+    const video = findVideo();
+    if (video && isMainVideo(video)) {
+      registerVideoFrame();
+    }
     renderTimelineCheckpoints();
   }
 
@@ -421,7 +471,7 @@
     initAttempts++;
     const video = findVideo();
 
-    if (video) {
+    if (video && isMainVideo(video)) {
       registerVideoFrame();
       initTimelineCheckpoints();
       clearInterval(initInterval);
@@ -436,7 +486,10 @@
     if (currentNormalizedUrl !== lastUrl) {
       lastUrl = currentNormalizedUrl;
       setTimeout(() => {
-        registerVideoFrame();
+        const video = findVideo();
+        if (video && isMainVideo(video)) {
+          registerVideoFrame();
+        }
         initTimelineCheckpoints();
       }, 1000);
     }
@@ -445,12 +498,18 @@
   // Detect YouTube SPA navigation finish events
   document.addEventListener('yt-navigate-finish', () => {
     setTimeout(() => {
-      registerVideoFrame();
+      const video = findVideo();
+      if (video && isMainVideo(video)) {
+        registerVideoFrame();
+      }
       initTimelineCheckpoints();
     }, 1000);
     
     setTimeout(() => {
-      registerVideoFrame();
+      const video = findVideo();
+      if (video && isMainVideo(video)) {
+        registerVideoFrame();
+      }
       initTimelineCheckpoints();
     }, 3000); 
   });
