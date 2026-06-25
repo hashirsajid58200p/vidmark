@@ -8,6 +8,40 @@
     --color-primary-fixed-dim-rgb: 76 214 255;
     --color-on-primary-rgb: 0 53 67;
     --color-on-primary-container-rgb: 0 86 106;
+
+    /* Theme Surface/Backgrounds (Dark Mode defaults) */
+    --color-background: #131313;
+    --color-surface: #131313;
+    --color-surface-container: #201f1f;
+    --color-surface-container-low: #1c1b1b;
+    --color-surface-container-high: #2a2a2a;
+    --color-surface-container-lowest: #0e0e0e;
+    --color-surface-container-highest: #353534;
+    --color-surface-variant: #353534;
+    --color-on-surface: #e5e2e1;
+    --color-on-surface-variant: #bbc9cf;
+    --color-on-background: #e5e2e1;
+    --color-on-surface-rgb: 229 226 225;
+    --color-border-opacity: 0.1;
+    --app-wrapper-bg: #1e1e1e;
+}
+
+html.light {
+    /* Theme Surface/Backgrounds (Light Mode) */
+    --color-background: #f4f6fa;
+    --color-surface: #ffffff;
+    --color-surface-container: #edf1f7;
+    --color-surface-container-low: #f5f7fa;
+    --color-surface-container-high: #e4e8f0;
+    --color-surface-container-lowest: #ffffff;
+    --color-surface-container-highest: #dadfe8;
+    --color-surface-variant: #dadfe8;
+    --color-on-surface: #1c1e22;
+    --color-on-surface-variant: #5c6370;
+    --color-on-background: #1c1e22;
+    --color-on-surface-rgb: 28 30 34;
+    --color-border-opacity: 0.08;
+    --app-wrapper-bg: #ffffff;
 }
 
 html, body {
@@ -20,19 +54,23 @@ html, body {
 }
 
 .logo-img {
-    filter: var(--logo-filter, none);
+    filter: var(--theme-filter, none);
+}
+
+#empty-state-illustration {
+    filter: var(--theme-filter, none);
 }
 
 .app-wrapper {
     width: 100%;
     height: 100%;
     overflow: hidden;
-    background-color: #1e1e1e;
+    background-color: var(--app-wrapper-bg);
     display: flex;
     flex-direction: column;
     position: relative;
-    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
-    border: 1px solid rgba(255, 255, 255, 0.05);
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.25);
+    border: 1px solid rgba(var(--color-on-surface-rgb), var(--color-border-opacity));
 }
 
 .truncate-text {
@@ -51,13 +89,13 @@ html, body {
     background: transparent;
 }
 .custom-scrollbar::-webkit-scrollbar-thumb {
-    background: #353534; /* surface-variant */
+    background: var(--color-surface-variant);
     border-radius: 4px;
 }
 
 /* Hover states for video card per guidelines */
 .video-card:hover .video-border {
-    border-color: rgba(255, 255, 255, 0.4) !important;
+    border-color: rgba(var(--color-on-surface-rgb), 0.4) !important;
 }
 .video-card:hover .play-overlay {
     opacity: 1 !important;

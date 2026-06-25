@@ -628,7 +628,7 @@ const THEME_PRESETS = {
     "--color-primary-fixed-dim-rgb": "76 214 255",
     "--color-on-primary-rgb": "0 53 67",
     "--color-on-primary-container-rgb": "0 86 106",
-    "--logo-filter": "none"
+    "--theme-filter": "none"
   },
   red: {
     "--color-primary-rgb": "255 180 171",
@@ -636,7 +636,7 @@ const THEME_PRESETS = {
     "--color-primary-fixed-dim-rgb": "255 137 125",
     "--color-on-primary-rgb": "105 0 5",
     "--color-on-primary-container-rgb": "65 0 2",
-    "--logo-filter": "hue-rotate(173deg) brightness(1.1)"
+    "--theme-filter": "hue-rotate(173deg) brightness(1.1)"
   },
   orange: {
     "--color-primary-rgb": "255 184 121",
@@ -644,7 +644,7 @@ const THEME_PRESETS = {
     "--color-primary-fixed-dim-rgb": "255 167 38",
     "--color-on-primary-rgb": "79 37 0",
     "--color-on-primary-container-rgb": "45 22 0",
-    "--logo-filter": "hue-rotate(206deg)"
+    "--theme-filter": "hue-rotate(206deg)"
   },
   green: {
     "--color-primary-rgb": "142 243 167",
@@ -652,7 +652,7 @@ const THEME_PRESETS = {
     "--color-primary-fixed-dim-rgb": "97 224 130",
     "--color-on-primary-rgb": "0 83 31",
     "--color-on-primary-container-rgb": "0 57 18",
-    "--logo-filter": "hue-rotate(295deg) saturate(0.8)"
+    "--theme-filter": "hue-rotate(295deg) saturate(0.8)"
   },
   purple: {
     "--color-primary-rgb": "232 185 255",
@@ -660,7 +660,7 @@ const THEME_PRESETS = {
     "--color-primary-fixed-dim-rgb": "212 142 255",
     "--color-on-primary-rgb": "86 0 126",
     "--color-on-primary-container-rgb": "50 0 74",
-    "--logo-filter": "hue-rotate(89deg) brightness(1.2)"
+    "--theme-filter": "hue-rotate(89deg) brightness(1.2)"
   }
 };
 
@@ -669,12 +669,6 @@ function applyTheme(themeName) {
   const root = document.documentElement;
   for (const [key, val] of Object.entries(preset)) {
     root.style.setProperty(key, val);
-  }
-  
-  // Update dynamic empty state illustration
-  const emptyStateImg = document.getElementById("empty-state-illustration");
-  if (emptyStateImg) {
-    emptyStateImg.src = `images/${themeName}.png`;
   }
 
   // Save chosen theme in local storage
@@ -694,10 +688,47 @@ function applyTheme(themeName) {
   });
 }
 
+function applyThemeMode(mode) {
+  const root = document.documentElement;
+  if (mode === "light") {
+    root.classList.remove("dark");
+    root.classList.add("light");
+  } else {
+    root.classList.remove("light");
+    root.classList.add("dark");
+  }
+  
+  chrome.storage.local.set({ theme_mode: mode });
+  updateThemeModeToggleUI(mode);
+}
+
+function updateThemeModeToggleUI(mode) {
+  document.querySelectorAll(".theme-mode-btn").forEach(btn => {
+    const knob = btn.querySelector("span");
+    if (mode === "dark") {
+      btn.classList.remove("bg-surface-variant");
+      btn.classList.add("bg-primary");
+      if (knob) {
+        knob.classList.remove("translate-x-1");
+        knob.classList.add("translate-x-6");
+      }
+    } else {
+      btn.classList.remove("bg-primary");
+      btn.classList.add("bg-surface-variant");
+      if (knob) {
+        knob.classList.remove("translate-x-6");
+        knob.classList.add("translate-x-1");
+      }
+    }
+  });
+}
+
 function initTheme() {
-  chrome.storage.local.get(["active_theme"], (result) => {
+  chrome.storage.local.get(["active_theme", "theme_mode"], (result) => {
     const activeTheme = result.active_theme || "cyan";
+    const themeMode = result.theme_mode || "dark";
     applyTheme(activeTheme);
+    applyThemeMode(themeMode);
   });
 }
 
@@ -706,6 +737,16 @@ function wireSettingsListeners() {
     btn.addEventListener("click", () => {
       const theme = btn.getAttribute("data-theme");
       applyTheme(theme);
+    });
+  });
+
+  document.querySelectorAll(".theme-mode-btn").forEach(btn => {
+    btn.addEventListener("click", () => {
+      chrome.storage.local.get(["theme_mode"], (result) => {
+        const currentMode = result.theme_mode || "dark";
+        const newMode = currentMode === "dark" ? "light" : "dark";
+        applyThemeMode(newMode);
+      });
     });
   });
 
