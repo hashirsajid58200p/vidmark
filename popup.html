@@ -233,16 +233,12 @@
 
       <!-- BottomNavBar (Integrated from empty.html) -->
       <nav class="absolute bottom-0 w-full z-10 bg-surface-container/90 backdrop-blur-lg border-t border-white/5 shadow-md flex justify-around items-center py-xs px-md shrink-0">
-        <button id="empty-bookmarks-tab" class="flex flex-col items-center justify-center text-primary font-bold active:scale-90 w-[96px] group">
-          <div class="p-xs rounded-full mb-xs group-hover:bg-primary/10 transition-colors">
-            <span class="material-symbols-outlined text-[24px]" style="font-variation-settings: 'FILL' 1;">bookmark</span>
-          </div>
+        <button id="empty-bookmarks-tab" class="flex flex-col items-center justify-center text-primary font-bold active:scale-90 hover:text-primary-fixed-dim transition-all w-[96px] h-[48px] gap-1">
+          <span class="material-symbols-outlined text-[24px]" style="font-variation-settings: 'FILL' 1;">bookmark</span>
           <span class="font-label-sm text-label-sm">Bookmarks</span>
         </button>
-        <button id="empty-history-tab" class="flex flex-col items-center justify-center text-on-surface-variant hover:text-primary-fixed-dim transition-all active:scale-90 w-[96px] group">
-          <div class="p-xs rounded-full mb-xs group-hover:bg-surface-variant transition-colors">
-            <span class="material-symbols-outlined text-[24px]" style="font-variation-settings: 'FILL' 0;">history</span>
-          </div>
+        <button id="empty-history-tab" class="flex flex-col items-center justify-center text-on-surface-variant active:scale-90 hover:text-primary-fixed-dim transition-all w-[96px] h-[48px] gap-1">
+          <span class="material-symbols-outlined text-[24px]">history</span>
           <span class="font-label-sm text-label-sm">History</span>
         </button>
       </nav>

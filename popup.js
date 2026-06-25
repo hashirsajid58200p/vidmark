@@ -202,8 +202,16 @@ function showActiveState(videoState) {
     if (!thumbContainer.dataset.listenerAttached) {
       thumbContainer.dataset.listenerAttached = "true";
       thumbContainer.addEventListener("click", () => {
-        chrome.tabs.sendMessage(currentTabId, { action: "TOGGLE_PLAYBACK" }, { frameId: activeFrameId }, (response) => {
-          if (!chrome.runtime.lastError && response && response.success) {
+        const msg = { action: "TOGGLE_PLAYBACK" };
+        chrome.tabs.sendMessage(currentTabId, msg, { frameId: activeFrameId }, (response) => {
+          if (chrome.runtime.lastError || !response || !response.success) {
+            // Fallback: target main frame (frameId: 0)
+            chrome.tabs.sendMessage(currentTabId, msg, { frameId: 0 }, (fallbackResponse) => {
+              if (!chrome.runtime.lastError && fallbackResponse && fallbackResponse.success) {
+                updatePlayOverlayIcon(fallbackResponse.paused);
+              }
+            });
+          } else {
             updatePlayOverlayIcon(response.paused);
           }
         });
@@ -315,24 +323,10 @@ function switchTab(viewName, state = 'active') {
     if (btn) {
       if (t === viewName) {
         btn.className = "flex flex-col items-center justify-center text-primary font-bold active:scale-90 hover:text-primary-fixed-dim transition-all w-[96px] h-[48px] gap-1";
-        
-        if (state === 'empty') {
-          btn.className = "flex flex-col items-center justify-center text-primary font-bold active:scale-90 w-[96px] group";
-          const iconDiv = btn.querySelector("div");
-          if (iconDiv) iconDiv.className = "p-xs rounded-full mb-xs bg-primary/10 transition-colors";
-        }
-        
         const icon = btn.querySelector('.material-symbols-outlined');
         if (icon) icon.style.fontVariationSettings = "'FILL' 1";
       } else {
         btn.className = "flex flex-col items-center justify-center text-on-surface-variant active:scale-90 hover:text-primary-fixed-dim transition-all w-[96px] h-[48px] gap-1";
-        
-        if (state === 'empty') {
-          btn.className = "flex flex-col items-center justify-center text-on-surface-variant hover:text-primary-fixed-dim transition-all active:scale-90 w-[96px] group";
-          const iconDiv = btn.querySelector("div");
-          if (iconDiv) iconDiv.className = "p-xs rounded-full mb-xs group-hover:bg-surface-variant transition-colors";
-        }
-
         const icon = btn.querySelector('.material-symbols-outlined');
         if (icon) icon.style.fontVariationSettings = "'FILL' 0";
       }
