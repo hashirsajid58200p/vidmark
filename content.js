@@ -121,9 +121,9 @@
     });
   }
 
-  // Search for common player progress bar elements
+  // Search for common player progress bar elements (in both specific and generic containers, ignoring hidden state checks for initial matching)
   function findNativeTimeline() {
-    const selectors = [
+    const specificSelectors = [
       '.ytp-progress-list',             // YouTube
       '.vjs-progress-holder',           // Video.js
       '.vjs-progress-control',
@@ -134,17 +134,72 @@
       '.dplayer-bar-wrap',              // DPlayer
       '.art-control-progress',          // ArtPlayer
       '.bar-container',                 // Clappr
-      '.wmp-progress-bar',              // Generic styles
-      '[class*="progress-bar"]',        // Class pattern matching
-      '[class*="progress-control"]',
-      '[class*="progress-holder"]'
+      '.wmp-progress-bar'               // Generic styles
     ];
 
-    for (const selector of selectors) {
+    for (const selector of specificSelectors) {
       const el = document.querySelector(selector);
-      if (el && el.offsetWidth > 0 && el.offsetHeight > 0) {
-        return el;
+      if (el) return el;
+    }
+
+    const genericSelectors = [
+      '[class*="progress-bar"]',
+      '[class*="progress-control"]',
+      '[class*="progress-holder"]',
+      '[class*="progress"]',
+      '[class*="slider"]',
+      '[class*="scrub"]',
+      '[class*="seek"]',
+      '[class*="timeline"]'
+    ];
+
+    for (const selector of genericSelectors) {
+      const elements = Array.from(document.querySelectorAll(selector));
+      for (const el of elements) {
+        const className = (el.className || "").toString().toLowerCase();
+        // Exclude volume bars, tooltips, buffers, loaders, etc.
+        if (
+          className.includes('volume') ||
+          className.includes('tooltip') ||
+          className.includes('buffer') ||
+          className.includes('load') ||
+          className.includes('preview') ||
+          className.includes('marker') ||
+          className.includes('checkpoint')
+        ) {
+          continue;
+        }
+        
+        if (el.tagName === 'DIV' || el.tagName === 'SPAN') {
+          return el;
+        }
       }
+    }
+    return null;
+  }
+
+  // Extract page metadata images (og:image / twitter:image) to use as high-quality video covers
+  function getMetaThumbnail() {
+    try {
+      const selectors = [
+        'meta[property="og:image"]',
+        'meta[name="twitter:image"]',
+        'meta[property="twitter:image"]',
+        'link[rel="image_src"]',
+        'link[rel="icon"]',
+        'meta[name="thumbnail"]'
+      ];
+      for (const selector of selectors) {
+        const el = document.querySelector(selector);
+        if (el) {
+          const content = el.getAttribute('content') || el.getAttribute('href');
+          if (content && content.startsWith('http')) {
+            return content;
+          }
+        }
+      }
+    } catch (e) {
+      console.warn("VidMark: Metadata thumbnail parse failed.", e.message);
     }
     return null;
   }
@@ -275,8 +330,8 @@
       const url = getNormalizedUrl(window.location.href);
       const ytId = getYoutubeVideoId(url);
       
-      // If not YouTube, prioritize video.poster before falling back to canvas screenshot capture
-      const thumbnail = ytId ? `https://img.youtube.com/vi/${ytId}/hqdefault.jpg` : (video.poster || captureVideoFrame(video));
+      // If not YouTube, prioritize meta tag cover images and video.poster before falling back to canvas screenshot capture
+      const thumbnail = ytId ? `https://img.youtube.com/vi/${ytId}/hqdefault.jpg` : (getMetaThumbnail() || video.poster || captureVideoFrame(video));
       const cleanTitle = getCleanTitle();
 
       sendResponse({

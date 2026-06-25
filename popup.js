@@ -187,7 +187,8 @@ function showActiveState(videoState) {
     // Send QUICK_MARK to content script in targeted frame
     chrome.tabs.sendMessage(currentTabId, { action: "QUICK_MARK" }, { frameId: activeFrameId }, (response) => {
       if (chrome.runtime.lastError || !response || !response.success) {
-        showAlert("Bookmark Failed", "Failed to save bookmark. Is there a video playing on the active tab?");
+        const errorMsg = response?.error || chrome.runtime.lastError?.message || "Failed to save bookmark. Is there a video playing on the active tab?";
+        showAlert("Bookmark Failed", errorMsg);
         return;
       }
       loadBookmarks(storageKey);
