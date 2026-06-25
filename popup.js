@@ -2,6 +2,7 @@
 
 document.addEventListener("DOMContentLoaded", () => {
   initTheme();
+  loadLogo();
   initPopup();
   wireTabListeners();
   wireSettingsListeners();
@@ -189,7 +190,7 @@ function showActiveState(videoState) {
   // Populate Video Card Info
   videoTitle.textContent = videoState.title || "Active Video";
   videoTime.textContent = formatTime(videoState.duration);
-  videoThumbnail.src = videoState.thumbnail || 'icons/icon128.png';
+  videoThumbnail.src = videoState.thumbnail || 'icons/logo.svg';
   videoThumbnail.alt = videoState.title || 'Video Thumbnail';
 
   // Apply marquee animation if title is too long
@@ -407,12 +408,12 @@ function renderBookmarks(bookmarks, storageKey) {
     const entry = document.createElement("div");
     entry.className = "flex items-center justify-between py-sm border-b border-white/5 group z-10 bookmark-item-row";
 
-    const thumbUrl = bm.thumbnail || 'icons/icon48.png';
+    const thumbUrl = bm.thumbnail || 'icons/logo.svg';
 
     entry.innerHTML = `
       <!-- Thumbnail frame canvas snapshot -->
       <div class="relative w-[56px] h-[36px] bg-surface-container-low rounded overflow-hidden shrink-0 mr-sm flex items-center justify-center border border-white/5">
-        <img class="w-full h-full object-cover" src="${thumbUrl}" alt="Cap" onerror="this.onerror=null; this.src='icons/icon48.png';"/>
+        <img class="w-full h-full object-cover" src="${thumbUrl}" alt="Cap" onerror="this.onerror=null; this.src='icons/logo.svg';"/>
         <div class="play-overlay absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer">
           <span class="material-symbols-outlined text-white text-[16px] play-trigger" style="font-variation-settings: 'FILL' 1;">play_arrow</span>
         </div>
@@ -525,7 +526,7 @@ function loadHistory() {
         // Smarter Title & Thumbnail parsing: grab first item notes and frames
         const firstBm = bookmarks[0];
         const title = firstBm.note || "Annotated Video Link";
-        const thumbnail = bookmarks.find(b => b.thumbnail)?.thumbnail || 'icons/icon48.png';
+        const thumbnail = bookmarks.find(b => b.thumbnail)?.thumbnail || 'icons/logo.svg';
 
         const item = document.createElement("div");
         item.className = "flex items-center gap-sm p-sm bg-surface-container rounded-lg border border-white/5 hover:border-primary/20 transition-all cursor-pointer group active:scale-[0.98]";
@@ -534,7 +535,7 @@ function loadHistory() {
           <!-- Main link area (opens tab) -->
           <div class="flex items-center gap-sm flex-1 min-w-0 link-area">
             <div class="relative w-[64px] h-[40px] bg-surface-container-low rounded overflow-hidden shrink-0 border border-white/5">
-              <img class="w-full h-full object-cover" src="${thumbnail}" alt="Thumb" onerror="this.onerror=null; this.src='icons/icon48.png';"/>
+              <img class="w-full h-full object-cover" src="${thumbnail}" alt="Thumb" onerror="this.onerror=null; this.src='icons/logo.svg';"/>
             </div>
             <div class="flex-1 min-w-0 flex flex-col justify-center">
               <h4 class="font-body-md text-body-md text-on-surface font-semibold truncate leading-tight group-hover:text-primary transition-colors" title="${escapeHTML(title)}">${escapeHTML(title)}</h4>
@@ -747,5 +748,27 @@ function updatePlayOverlayIcon(paused) {
   const icon = document.querySelector(".play-overlay span.material-symbols-outlined");
   if (icon) {
     icon.textContent = paused ? "play_arrow" : "pause";
+  }
+}
+
+async function loadLogo() {
+  try {
+    const response = await fetch('icons/logo.svg');
+    let svgText = await response.text();
+    // Replace the hardcoded background fill with a CSS variable fill
+    svgText = svgText.replace('fill="#00d1ff"', 'fill="rgb(var(--color-primary-container-rgb))"');
+    
+    // Inject into logo containers
+    document.querySelectorAll(".logo-container").forEach(el => {
+      el.innerHTML = svgText;
+      const svg = el.querySelector("svg");
+      if (svg) {
+        svg.setAttribute("class", "w-6 h-6 shrink-0");
+        svg.removeAttribute("width");
+        svg.removeAttribute("height");
+      }
+    });
+  } catch (e) {
+    console.error("Failed to load SVG logo:", e);
   }
 }
