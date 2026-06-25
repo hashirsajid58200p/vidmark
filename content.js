@@ -1,5 +1,20 @@
 // VidMark - Content Script
 
+// Helper to format seconds into HH:MM:SS or MM:SS
+function formatTime(secs) {
+  const s = Math.floor(secs);
+  const hours = Math.floor(s / 3600);
+  const minutes = Math.floor((s % 3600) / 60);
+  const seconds = s % 60;
+
+  const pad = (n) => String(n).padStart(2, "0");
+
+  if (hours > 0) {
+    return `${hours}:${pad(minutes)}:${pad(seconds)}`;
+  }
+  return `${pad(minutes)}:${pad(seconds)}`;
+}
+
 // Helper to extract YouTube video ID from URL
 function getYoutubeVideoId(url) {
   try {
@@ -59,7 +74,7 @@ function renderTimelineCheckpoints() {
       // Target the progress list container on the YouTube player
       const progressContainer = document.querySelector('.ytp-progress-list');
       if (!progressContainer) {
-        return; // Skip if progress bar is not in DOM (non-YouTube or player not loaded)
+        return; // Skip if progress bar is not in DOM (non-YouTube or player not loaded yet)
       }
 
       bookmarks.forEach(bm => {
@@ -104,7 +119,7 @@ function initTimelineCheckpoints() {
   renderTimelineCheckpoints();
 }
 
-// Listen for messages from the popup UI
+// Listen for messages from the popup UI or background service worker
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   if (request.action === "GET_VIDEO_STATE") {
     const video = findVideo();
@@ -147,11 +162,42 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     renderTimelineCheckpoints();
     sendResponse({ success: true });
   }
+
+  else if (request.action === "QUICK_MARK") {
+    const video = findVideo();
+    if (video) {
+      const time = video.currentTime;
+      const url = window.location.href;
+      const storageKey = `vidmark_bm_${url}`;
+      
+      chrome.storage.local.get([storageKey], (result) => {
+        const bookmarks = result[storageKey] || [];
+        const existingIndex = bookmarks.findIndex(bm => Math.floor(bm.time) === Math.floor(time));
+        
+        if (existingIndex === -1) {
+          const defaultNote = `Quick Mark @ ${formatTime(time)}`;
+          bookmarks.push({ time, note: defaultNote });
+          bookmarks.sort((a, b) => a.time - b.time);
+          
+          chrome.storage.local.set({ [storageKey]: bookmarks }, () => {
+            renderTimelineCheckpoints();
+            sendResponse({ success: true, time });
+          });
+        } else {
+          sendResponse({ success: false, error: "Bookmark already exists at this timestamp." });
+        }
+      });
+      return true; // Keep channel open for async response
+    } else {
+      sendResponse({ success: false, error: "No active video element found to bookmark." });
+    }
+    return true;
+  }
   
   return true; // Keep channel open for async response
 });
 
-// SPA checking & Initial injection polling loop
+// Initial injection polling loop
 let lastUrl = window.location.href;
 let initAttempts = 0;
 
@@ -164,18 +210,27 @@ const initInterval = setInterval(() => {
     initTimelineCheckpoints();
     clearInterval(initInterval);
   } else if (initAttempts > 20 || (!video && initAttempts > 10)) {
-    // Stop polling if player is not found after 20 tries, or if no video element is present at all after 10
     clearInterval(initInterval);
   }
 }, 1000);
 
-// Detect YouTube SPA client-side router page navigations
+// Detect YouTube SPA client-side router page navigations via URL check
 setInterval(() => {
   if (window.location.href !== lastUrl) {
     lastUrl = window.location.href;
-    // Delay slightly to allow the video player player DOM elements to update
     setTimeout(() => {
       initTimelineCheckpoints();
     }, 1000);
   }
 }, 1000);
+
+// Detect YouTube SPA navigation finish events
+document.addEventListener('yt-navigate-finish', () => {
+  setTimeout(() => {
+    initTimelineCheckpoints();
+  }, 1000);
+  
+  setTimeout(() => {
+    initTimelineCheckpoints();
+  }, 3000); // Safety fallback for slower connections
+});
