@@ -15,6 +15,7 @@ const saveBtn = document.getElementById("save-timestamp");
 const bookmarksList = document.getElementById("bookmarks-list");
 
 let currentTabId = null;
+let activeFrameId = 0; // Target sub-frame hosting the video element
 
 // Helper to normalize the URL by stripping seek query parameters
 function getNormalizedUrl(rawUrl) {
@@ -48,19 +49,26 @@ async function initPopup() {
       return;
     }
 
-    // Programmatically inject content script to make sure it is loaded
-    await chrome.scripting.executeScript({
-      target: { tabId: tab.id },
-      files: ["content.js"]
-    });
+    // Query the background service worker to find the registered frame hosting the video tag
+    chrome.runtime.sendMessage({ action: "GET_ACTIVE_FRAME", tabId: tab.id }, (response) => {
+      activeFrameId = response?.frameId || 0;
 
-    // Request video state from content script
-    chrome.tabs.sendMessage(tab.id, { action: "GET_VIDEO_STATE" }, (response) => {
-      if (chrome.runtime.lastError || !response || !response.found) {
-        showEmptyState();
-      } else {
-        showActiveState(response);
-      }
+      // Request video state from content script in that specific frame
+      chrome.tabs.sendMessage(tab.id, { action: "GET_VIDEO_STATE" }, { frameId: activeFrameId }, (videoState) => {
+        if (chrome.runtime.lastError || !videoState || !videoState.found) {
+          // If message to targeted frame failed, try messaging the main top-frame as a fallback
+          chrome.tabs.sendMessage(tab.id, { action: "GET_VIDEO_STATE" }, { frameId: 0 }, (topState) => {
+            if (chrome.runtime.lastError || !topState || !topState.found) {
+              showEmptyState();
+            } else {
+              activeFrameId = 0;
+              showActiveState(topState);
+            }
+          });
+        } else {
+          showActiveState(videoState);
+        }
+      });
     });
 
   } catch (err) {
@@ -101,14 +109,12 @@ function showActiveState(videoState) {
   const newSaveBtn = document.getElementById("save-timestamp");
   
   newSaveBtn.addEventListener("click", () => {
-    // Send QUICK_MARK to content script to perform screenshot and capture
-    chrome.tabs.sendMessage(currentTabId, { action: "QUICK_MARK" }, (response) => {
+    // Send QUICK_MARK to content script in targeted frame
+    chrome.tabs.sendMessage(currentTabId, { action: "QUICK_MARK" }, { frameId: activeFrameId }, (response) => {
       if (chrome.runtime.lastError || !response || !response.success) {
         alert("Failed to save bookmark. Is there a video playing on the active tab?");
         return;
       }
-      
-      // Reload the updated bookmarks list
       loadBookmarks(storageKey);
     });
   });
@@ -116,7 +122,7 @@ function showActiveState(videoState) {
   notifyContentScriptUpdate();
 }
 
-// Load and render bookmarks for the current video from chrome.storage.local
+// Load and render bookmarks for the current video from local storage
 function loadBookmarks(storageKey) {
   chrome.storage.local.get([storageKey], (result) => {
     const bookmarks = result[storageKey] || [];
@@ -124,7 +130,7 @@ function loadBookmarks(storageKey) {
   });
 }
 
-// Save a bookmark inline update (used after inline editing finishes)
+// Save inline note editing changes
 function saveInlineEdit(time, newNote, storageKey) {
   chrome.storage.local.get([storageKey], (result) => {
     const bookmarks = result[storageKey] || [];
@@ -152,19 +158,19 @@ function deleteBookmark(time, storageKey) {
   });
 }
 
-// Send a message to content script to seek video to specific timestamp
+// Send a message to seek video in the active frame container
 function seekVideo(time) {
-  chrome.tabs.sendMessage(currentTabId, { action: "SEEK_VIDEO", time }, (response) => {
+  chrome.tabs.sendMessage(currentTabId, { action: "SEEK_VIDEO", time }, { frameId: activeFrameId }, (response) => {
     if (chrome.runtime.lastError || !response || !response.success) {
       console.warn("Seeking failed:", chrome.runtime.lastError || response?.error);
     }
   });
 }
 
-// Send a message to content script to refresh timeline checkpoints
+// Notify content script in the targeted frame to update visual timeline checkpoints
 function notifyContentScriptUpdate() {
   if (currentTabId) {
-    chrome.tabs.sendMessage(currentTabId, { action: "UPDATE_CHECKPOINTS" }, () => {
+    chrome.tabs.sendMessage(currentTabId, { action: "UPDATE_CHECKPOINTS" }, { frameId: activeFrameId }, () => {
       if (chrome.runtime.lastError) {
         // ignore errors silently
       }
@@ -182,6 +188,11 @@ function switchTab(viewName, state = 'active') {
       el.style.display = (v === viewName) ? 'flex' : 'none';
     }
   });
+
+  // Load History items dynamically if history view tab is requested
+  if (viewName === 'history') {
+    loadHistory();
+  }
 
   // Adjust bottom navigation buttons' active colors & fonts
   const tabs = ['bookmarks', 'tags', 'history'];
@@ -288,7 +299,6 @@ function renderBookmarks(bookmarks, storageKey) {
     const entry = document.createElement("div");
     entry.className = "flex items-center justify-between py-sm border-b border-white/5 group z-10 bookmark-item-row";
 
-    // Set fallback icon if screenshot is not found (CORS exception)
     const thumbUrl = bm.thumbnail || 'icons/icon48.png';
 
     entry.innerHTML = `
@@ -337,11 +347,10 @@ function renderBookmarks(bookmarks, storageKey) {
 
       if (!isEditing) {
         entry.classList.add("is-editing");
-        editIcon.textContent = "done"; // Toggle to checkmark icon
+        editIcon.textContent = "done"; 
         editBtn.classList.remove("hover:text-primary");
         editBtn.classList.add("text-primary");
 
-        // Swap paragraph display text with editable input
         const input = document.createElement("input");
         input.type = "text";
         input.className = "bg-surface-container-low border-b-2 border-primary text-on-surface rounded px-1 py-xs w-full outline-none font-body-md text-body-md";
@@ -351,7 +360,6 @@ function renderBookmarks(bookmarks, storageKey) {
         input.focus();
         input.select();
 
-        // Save inline note state on Enter or reload original list on Escape
         input.addEventListener("keydown", (e) => {
           if (e.key === "Enter") {
             saveInlineEdit(bm.time, input.value, storageKey);
@@ -366,6 +374,80 @@ function renderBookmarks(bookmarks, storageKey) {
     });
 
     bookmarksList.appendChild(entry);
+  });
+}
+
+// Retrieve and render Recently Bookmarked Videos History
+function loadHistory() {
+  chrome.storage.local.get(null, (items) => {
+    // Get all keys starting with vidmark_bm_
+    const keys = Object.keys(items).filter(k => k.startsWith("vidmark_bm_"));
+
+    const renderList = (container) => {
+      if (!container) return;
+      container.innerHTML = "";
+
+      if (keys.length === 0) {
+        container.className = "flex-1 flex flex-col items-center justify-center p-md text-center min-h-[300px]";
+        container.innerHTML = `
+          <span class="material-symbols-outlined text-[40px] text-primary mb-sm">history</span>
+          <h3 class="font-headline-md text-on-surface mb-xs">History</h3>
+          <p class="font-body-md text-on-surface-variant max-w-[240px] leading-relaxed">No recently bookmarked videos found.</p>
+        `;
+        return;
+      }
+
+      container.className = "flex-1 flex flex-col p-md text-left overflow-y-auto custom-scrollbar pb-[72px]";
+      
+      // Header Text
+      const headerText = document.createElement("h3");
+      headerText.className = "font-headline-md text-headline-md-mobile text-on-surface font-semibold mb-sm pr-xs tracking-tight";
+      headerText.textContent = "Bookmarked Videos";
+      container.appendChild(headerText);
+
+      const listWrapper = document.createElement("div");
+      listWrapper.className = "flex flex-col gap-xs flex-1";
+
+      keys.forEach(key => {
+        const bookmarks = items[key] || [];
+        if (bookmarks.length === 0) return;
+
+        const videoUrl = key.substring("vidmark_bm_".length);
+        
+        // Smarter Title & Thumbnail parsing: grab first item notes and frames
+        const firstBm = bookmarks[0];
+        const title = firstBm.note || "Annotated Video Link";
+        const thumbnail = bookmarks.find(b => b.thumbnail)?.thumbnail || 'icons/icon48.png';
+
+        const item = document.createElement("div");
+        item.className = "flex items-center gap-sm p-sm bg-surface-container rounded-lg border border-white/5 hover:border-primary/20 transition-all cursor-pointer group active:scale-[0.98]";
+
+        item.innerHTML = `
+          <div class="relative w-[64px] h-[40px] bg-surface-container-low rounded overflow-hidden shrink-0 border border-white/5">
+            <img class="w-full h-full object-cover" src="${thumbnail}" alt="Thumb"/>
+          </div>
+          <div class="flex-1 min-w-0 flex flex-col justify-center">
+            <h4 class="font-body-md text-body-md text-on-surface font-semibold truncate leading-tight group-hover:text-primary transition-colors" title="${escapeHTML(title)}">${escapeHTML(title)}</h4>
+            <p class="font-label-sm text-label-sm text-on-surface-variant mt-xs">${bookmarks.length} bookmark${bookmarks.length > 1 ? 's' : ''}</p>
+          </div>
+          <span class="material-symbols-outlined text-on-surface-variant group-hover:text-primary transition-colors text-[18px]">open_in_new</span>
+        `;
+
+        item.addEventListener("click", () => {
+          chrome.tabs.create({ url: videoUrl });
+        });
+
+        listWrapper.appendChild(item);
+      });
+
+      container.appendChild(listWrapper);
+    };
+
+    const activeHistory = document.getElementById("active-history-view");
+    renderList(activeHistory);
+
+    const emptyHistory = document.getElementById("empty-history-view");
+    renderList(emptyHistory);
   });
 }
 

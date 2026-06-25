@@ -15,16 +15,18 @@
     {
       "matches": ["<all_urls>"],
       "js": ["content.js"],
-      "run_at": "document_idle"
+      "run_at": "document_idle",
+      "all_frames": true,
+      "match_about_blank": true
     }
   ],
   "commands": {
-    "quick-mark": {
+    "QUICK_MARK": {
       "suggested_key": {
-        "default": "Ctrl+Shift+S",
-        "mac": "MacCtrl+Shift+S"
+        "default": "Ctrl+Shift+K",
+        "mac": "MacCtrl+Shift+K"
       },
-      "description": "Quickly save a video bookmark at the current timestamp."
+      "description": "Add Bookmark instantly"
     }
   },
   "action": {
