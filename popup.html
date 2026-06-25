@@ -51,14 +51,16 @@
               </div>
             </div>
             <div class="flex-1 min-w-0">
-              <h2 id="video-title" class="font-body-md text-body-md text-on-surface font-semibold truncate w-full">Advanced Python Tutorial</h2>
+              <div id="video-title-container" class="w-full overflow-hidden whitespace-nowrap">
+                <span id="video-title" class="font-body-md text-body-md text-on-surface font-semibold inline-block">Advanced Python Tutorial</span>
+              </div>
               <p id="video-time" class="font-label-sm text-label-sm text-on-surface-variant mt-xs">00:00</p>
             </div>
           </div>
 
           <!-- Primary Action Button -->
           <div class="px-md pb-md shrink-0">
-            <button id="save-timestamp" class="w-full bg-primary-container text-on-primary-container font-body-md text-body-md font-semibold rounded-lg py-[10px] px-md flex items-center justify-center gap-2 shadow-[0_4px_20px_rgba(0,209,255,0.3)] hover:bg-primary transition-colors active:scale-[0.98]">
+            <button id="save-timestamp" class="w-full bg-primary-container text-on-primary-container font-body-md text-body-md font-semibold rounded-lg py-[10px] px-md flex items-center justify-center gap-2 shadow-[0_4px_20px_rgba(var(--color-primary-container-rgb),0.3)] hover:bg-primary transition-colors active:scale-[0.98]">
               <span class="material-symbols-outlined text-[20px]">add</span>
               Save Current Timestamp
             </button>
@@ -70,23 +72,46 @@
           </div>
         </div>
 
-        <!-- Tags View -->
-        <div id="active-tags-view" class="flex-1 flex flex-col items-center justify-center p-md text-center min-h-[300px]" style="display: none;">
-          <span class="material-symbols-outlined text-[40px] text-primary mb-sm">sell</span>
-          <h3 class="font-headline-md text-on-surface mb-xs">Tags</h3>
-          <p class="font-body-md text-on-surface-variant max-w-[240px] leading-relaxed">Organize and search your video checkpoints. Coming soon!</p>
-        </div>
-
         <!-- History View -->
         <div id="active-history-view" class="flex-1 flex flex-col p-md min-h-[300px]" style="display: none;">
           <!-- Injected dynamically -->
         </div>
 
         <!-- Settings View -->
-        <div id="active-settings-view" class="flex-1 flex flex-col items-center justify-center p-md text-center min-h-[300px]" style="display: none;">
-          <span class="material-symbols-outlined text-[40px] text-primary mb-sm">settings</span>
-          <h3 class="font-headline-md text-on-surface mb-xs">Settings</h3>
-          <p class="font-body-md text-on-surface-variant max-w-[240px] leading-relaxed">Configure default note templates and storage formats. Coming soon!</p>
+        <div id="active-settings-view" class="flex-1 flex flex-col p-md text-left min-h-[300px]" style="display: none;">
+          <h3 class="font-headline-md text-headline-md-mobile text-on-surface font-semibold mb-sm tracking-tight">Settings</h3>
+          
+          <div class="flex flex-col gap-sm flex-1">
+            <!-- Keyboard Shortcuts Config -->
+            <div class="flex flex-col gap-xs p-sm bg-surface-container rounded-lg border border-white/5">
+              <span class="font-body-md text-on-surface font-semibold">Keyboard Shortcuts</span>
+              <p class="text-[12px] text-on-surface-variant leading-relaxed mb-sm">Customize hotkeys (like <code class="bg-surface-variant px-1 rounded text-primary">Ctrl+Shift+K</code>) for bookmarking.</p>
+              <button id="active-shortcuts-btn" class="w-full bg-primary-container text-on-primary-container font-semibold rounded-lg py-sm text-body-md hover:bg-primary transition-colors flex items-center justify-center gap-1 active:scale-95">
+                <span class="material-symbols-outlined text-[18px]">open_in_new</span>
+                Configure Shortcuts
+              </button>
+            </div>
+
+            <!-- Theme Color Selector -->
+            <div class="flex flex-col gap-xs p-sm bg-surface-container rounded-lg border border-white/5">
+              <span class="font-body-md text-on-surface font-semibold">Theme Accent Color</span>
+              <p class="text-[12px] text-on-surface-variant leading-relaxed mb-sm">Select a color variation to customize the extension style.</p>
+              <div class="flex items-center gap-sm justify-start select-none">
+                <button data-theme="cyan" class="theme-dot w-6 h-6 rounded-full bg-[#00d1ff] border-2 border-white ring-2 ring-primary-container ring-offset-2 ring-offset-surface-container transition-transform hover:scale-110" aria-label="Cyan theme"></button>
+                <button data-theme="red" class="theme-dot w-6 h-6 rounded-full bg-[#ff5449] border-2 border-transparent hover:scale-110 transition-transform" aria-label="Red theme"></button>
+                <button data-theme="orange" class="theme-dot w-6 h-6 rounded-full bg-[#ff9f0a] border-2 border-transparent hover:scale-110 transition-transform" aria-label="Orange theme"></button>
+                <button data-theme="green" class="theme-dot w-6 h-6 rounded-full bg-[#30d158] border-2 border-transparent hover:scale-110 transition-transform" aria-label="Green theme"></button>
+                <button data-theme="purple" class="theme-dot w-6 h-6 rounded-full bg-[#bf5af2] border-2 border-transparent hover:scale-110 transition-transform" aria-label="Purple theme"></button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Credits Line -->
+          <footer class="py-sm flex items-center justify-center gap-1 text-on-surface-variant text-[12px] shrink-0 mt-auto">
+            <span>Made with</span>
+            <span class="material-symbols-outlined text-[14px] text-error" style="font-variation-settings: 'FILL' 1;">favorite</span>
+            <span>by Hashir Sajid</span>
+          </footer>
         </div>
 
         <!-- Help View -->
@@ -100,15 +125,11 @@
 
       <!-- BottomNavBar (Integrated from active.html) -->
       <nav class="absolute bottom-0 w-full z-10 flex justify-around items-center py-xs px-md bg-surface-container/90 backdrop-blur-lg border-t border-white/5 shadow-md">
-        <button id="active-bookmarks-tab" class="flex flex-col items-center justify-center text-primary font-bold active:scale-90 hover:text-primary-fixed-dim transition-all w-[64px] h-[48px] gap-1">
+        <button id="active-bookmarks-tab" class="flex flex-col items-center justify-center text-primary font-bold active:scale-90 hover:text-primary-fixed-dim transition-all w-[96px] h-[48px] gap-1">
           <span class="material-symbols-outlined text-[24px]" style="font-variation-settings: 'FILL' 1;">bookmark</span>
           <span class="font-label-sm text-label-sm">Bookmarks</span>
         </button>
-        <button id="active-tags-tab" class="flex flex-col items-center justify-center text-on-surface-variant active:scale-90 hover:text-primary-fixed-dim transition-all w-[64px] h-[48px] gap-1">
-          <span class="material-symbols-outlined text-[24px]">sell</span>
-          <span class="font-label-sm text-label-sm">Tags</span>
-        </button>
-        <button id="active-history-tab" class="flex flex-col items-center justify-center text-on-surface-variant active:scale-90 hover:text-primary-fixed-dim transition-all w-[64px] h-[48px] gap-1">
+        <button id="active-history-tab" class="flex flex-col items-center justify-center text-on-surface-variant active:scale-90 hover:text-primary-fixed-dim transition-all w-[96px] h-[48px] gap-1">
           <span class="material-symbols-outlined text-[24px]">history</span>
           <span class="font-label-sm text-label-sm">History</span>
         </button>
@@ -119,7 +140,7 @@
     <!-- 2. EMPTY STATE CONTAINER                                          -->
     <!-- Shown when no active tab video is detected                       -->
     <!-- ================================================================= -->
-    <div id="empty-state" class="w-full h-full flex flex-col" style="display: none;">
+    <div id="empty-state" class="w-full h-full flex flex-col relative" style="display: none;">
       <!-- TopNavBar (Integrated from empty.html) -->
       <header class="bg-surface dark:bg-surface w-full border-b border-white/10 bg-surface/80 backdrop-blur-md flex justify-between items-center px-md py-sm shrink-0">
         <div class="font-headline-md text-headline-md-mobile font-bold text-primary dark:text-primary flex items-center gap-2">
@@ -140,14 +161,14 @@
         <div class="ambient-glow"></div>
         
         <!-- Bookmarks View -->
-        <div id="empty-bookmarks-view" class="w-full flex flex-col flex-1 items-center justify-center">
-          <!-- Illustration -->
-          <div class="w-48 h-48 mb-lg relative flex items-center justify-center z-10">
-            <img class="object-contain w-full h-full opacity-90 drop-shadow-[0_4px_20px_rgba(0,209,255,0.1)]" src="https://lh3.googleusercontent.com/aida-public/AB6AXuA1-XYlUf8qsrVoRv7NyJDLpPLNbHEE6S7CK8Ckc3oPEp8Zz6apQsbnIIkuzk_nwzXOuyG20FeWcUxM56JzR2KsW5nNBQPcAkf6skIsTLDH8y8EzVe0J8a98Qu-WRYr3dlnf5VVmvLnaa11l47RnW_rv7UT-tBxrMvvwef2tQkRy9hHSpE9Vn3f-uJIp2NimUw54xnGw6FtzVR4pj-Ls1Uxcb2Fa8vjNPteMXmOTGb1TWPL5xS9hQ7A-h0htSZI1aXtPn7BRskJYqEH" alt="Rocket Illustration"/>
+        <div id="empty-bookmarks-view" class="w-full flex-1 flex flex-col items-center justify-center">
+          <!-- Dynamic Illustration -->
+          <div class="w-36 h-36 mb-md relative flex items-center justify-center z-10 shrink-0">
+            <img id="empty-state-illustration" class="object-contain w-full h-full drop-shadow-[0_4px_20px_rgba(var(--color-primary-container-rgb),0.25)]" src="images/cyan.png" alt="Theme Illustration"/>
           </div>
           
           <!-- Typography Content -->
-          <div class="flex flex-col items-center text-center z-10 mb-xl max-w-[280px]">
+          <div class="flex flex-col items-center text-center z-10 mb-md max-w-[280px]">
             <h1 class="font-headline-lg-mobile text-headline-lg-mobile text-on-surface mb-sm tracking-tight">Ready to Mark?</h1>
             <p class="font-body-md text-body-md text-on-surface-variant leading-relaxed">Play a video to start bookmarking!</p>
           </div>
@@ -159,23 +180,46 @@
           </button>
         </div>
 
-        <!-- Tags View -->
-        <div id="empty-tags-view" class="w-full flex-1 flex flex-col items-center justify-center text-center relative z-10" style="display: none;">
-          <span class="material-symbols-outlined text-[40px] text-primary mb-sm">sell</span>
-          <h3 class="font-headline-md text-on-surface mb-xs">Tags</h3>
-          <p class="font-body-md text-on-surface-variant max-w-[240px] leading-relaxed">Organize and search your video checkpoints. Coming soon!</p>
-        </div>
-
         <!-- History View -->
         <div id="empty-history-view" class="w-full flex-1 flex flex-col p-md min-h-[300px]" style="display: none;">
           <!-- Injected dynamically -->
         </div>
 
         <!-- Settings View -->
-        <div id="empty-settings-view" class="w-full flex-1 flex flex-col items-center justify-center text-center relative z-10" style="display: none;">
-          <span class="material-symbols-outlined text-[40px] text-primary mb-sm">settings</span>
-          <h3 class="font-headline-md text-on-surface mb-xs">Settings</h3>
-          <p class="font-body-md text-on-surface-variant max-w-[240px] leading-relaxed">Configure default note templates and storage formats. Coming soon!</p>
+        <div id="empty-settings-view" class="w-full flex-1 flex flex-col p-md text-left relative z-10" style="display: none;">
+          <h3 class="font-headline-md text-on-surface font-semibold mb-sm tracking-tight">Settings</h3>
+          
+          <div class="flex flex-col gap-sm flex-1">
+            <!-- Keyboard Shortcuts Config -->
+            <div class="flex flex-col gap-xs p-sm bg-surface-container rounded-lg border border-white/5">
+              <span class="font-body-md text-on-surface font-semibold">Keyboard Shortcuts</span>
+              <p class="text-[12px] text-on-surface-variant leading-relaxed mb-sm">Customize hotkeys (like <code class="bg-surface-variant px-1 rounded text-primary">Ctrl+Shift+K</code>) for bookmarking.</p>
+              <button id="empty-shortcuts-btn" class="w-full bg-primary-container text-on-primary-container font-semibold rounded-lg py-sm text-body-md hover:bg-primary transition-colors flex items-center justify-center gap-1 active:scale-95">
+                <span class="material-symbols-outlined text-[18px]">open_in_new</span>
+                Configure Shortcuts
+              </button>
+            </div>
+
+            <!-- Theme Color Selector -->
+            <div class="flex flex-col gap-xs p-sm bg-surface-container rounded-lg border border-white/5">
+              <span class="font-body-md text-on-surface font-semibold">Theme Accent Color</span>
+              <p class="text-[12px] text-on-surface-variant leading-relaxed mb-sm">Select a color variation to customize the extension style.</p>
+              <div class="flex items-center gap-sm justify-start select-none">
+                <button data-theme="cyan" class="theme-dot w-6 h-6 rounded-full bg-[#00d1ff] border-2 border-white ring-2 ring-primary-container ring-offset-2 ring-offset-surface-container transition-transform hover:scale-110" aria-label="Cyan theme"></button>
+                <button data-theme="red" class="theme-dot w-6 h-6 rounded-full bg-[#ff5449] border-2 border-transparent hover:scale-110 transition-transform" aria-label="Red theme"></button>
+                <button data-theme="orange" class="theme-dot w-6 h-6 rounded-full bg-[#ff9f0a] border-2 border-transparent hover:scale-110 transition-transform" aria-label="Orange theme"></button>
+                <button data-theme="green" class="theme-dot w-6 h-6 rounded-full bg-[#30d158] border-2 border-transparent hover:scale-110 transition-transform" aria-label="Green theme"></button>
+                <button data-theme="purple" class="theme-dot w-6 h-6 rounded-full bg-[#bf5af2] border-2 border-transparent hover:scale-110 transition-transform" aria-label="Purple theme"></button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Credits Line -->
+          <footer class="py-sm flex items-center justify-center gap-1 text-on-surface-variant text-[12px] shrink-0 mt-auto">
+            <span>Made with</span>
+            <span class="material-symbols-outlined text-[14px] text-error" style="font-variation-settings: 'FILL' 1;">favorite</span>
+            <span>by Hashir Sajid</span>
+          </footer>
         </div>
 
         <!-- Help View -->
@@ -188,27 +232,20 @@
       </main>
 
       <!-- BottomNavBar (Integrated from empty.html) -->
-      <nav class="bg-surface-container/90 backdrop-blur-lg border-t border-white/5 shadow-md flex justify-around items-center py-xs px-md w-full shrink-0">
-        <button id="empty-bookmarks-tab" class="flex flex-col items-center justify-center text-primary font-bold active:scale-90 w-16 group">
+      <nav class="absolute bottom-0 w-full z-10 bg-surface-container/90 backdrop-blur-lg border-t border-white/5 shadow-md flex justify-around items-center py-xs px-md shrink-0">
+        <button id="empty-bookmarks-tab" class="flex flex-col items-center justify-center text-primary font-bold active:scale-90 w-[96px] group">
           <div class="p-xs rounded-full mb-xs group-hover:bg-primary/10 transition-colors">
             <span class="material-symbols-outlined text-[24px]" style="font-variation-settings: 'FILL' 1;">bookmark</span>
           </div>
           <span class="font-label-sm text-label-sm">Bookmarks</span>
         </button>
-        <button id="empty-tags-tab" class="flex flex-col items-center justify-center text-on-surface-variant hover:text-primary-fixed-dim transition-all active:scale-90 w-16 group">
-          <div class="p-xs rounded-full mb-xs group-hover:bg-surface-variant transition-colors">
-            <span class="material-symbols-outlined text-[24px]" style="font-variation-settings: 'FILL' 0;">sell</span>
-          </div>
-          <span class="font-label-sm text-label-sm">Tags</span>
-        </button>
-        <button id="empty-history-tab" class="flex flex-col items-center justify-center text-on-surface-variant hover:text-primary-fixed-dim transition-all active:scale-90 w-16 group">
+        <button id="empty-history-tab" class="flex flex-col items-center justify-center text-on-surface-variant hover:text-primary-fixed-dim transition-all active:scale-90 w-[96px] group">
           <div class="p-xs rounded-full mb-xs group-hover:bg-surface-variant transition-colors">
             <span class="material-symbols-outlined text-[24px]" style="font-variation-settings: 'FILL' 0;">history</span>
           </div>
           <span class="font-label-sm text-label-sm">History</span>
         </button>
       </nav>
-      <div class="h-[72px] w-full shrink-0"></div>
     </div>
 
     <!-- Custom Confirmation Modal -->

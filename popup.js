@@ -1,8 +1,10 @@
 // VidMark - Popup Logic
 
 document.addEventListener("DOMContentLoaded", () => {
+  initTheme();
   initPopup();
   wireTabListeners();
+  wireSettingsListeners();
 });
 
 // UI Elements mapping
@@ -190,6 +192,9 @@ function showActiveState(videoState) {
   videoThumbnail.src = videoState.thumbnail || 'icons/icon128.png';
   videoThumbnail.alt = videoState.title || 'Video Thumbnail';
 
+  // Apply marquee animation if title is too long
+  updateTitleMarquee();
+
   const normalizedUrl = getNormalizedUrl(videoState.url);
   const storageKey = `vidmark_bm_${normalizedUrl}`;
 
@@ -273,7 +278,7 @@ function notifyContentScriptUpdate() {
 
 // Tab Switching logic
 function switchTab(viewName, state = 'active') {
-  const views = ['bookmarks', 'tags', 'history', 'settings', 'help'];
+  const views = ['bookmarks', 'history', 'settings', 'help'];
   
   views.forEach(v => {
     const el = document.getElementById(`${state}-${v}-view`);
@@ -288,15 +293,15 @@ function switchTab(viewName, state = 'active') {
   }
 
   // Adjust bottom navigation buttons' active colors & fonts
-  const tabs = ['bookmarks', 'tags', 'history'];
+  const tabs = ['bookmarks', 'history'];
   tabs.forEach(t => {
     const btn = document.getElementById(`${state}-${t}-tab`);
     if (btn) {
       if (t === viewName) {
-        btn.className = "flex flex-col items-center justify-center text-primary font-bold active:scale-90 hover:text-primary-fixed-dim transition-all w-[64px] h-[48px] gap-1";
+        btn.className = "flex flex-col items-center justify-center text-primary font-bold active:scale-90 hover:text-primary-fixed-dim transition-all w-[96px] h-[48px] gap-1";
         
         if (state === 'empty') {
-          btn.className = "flex flex-col items-center justify-center text-primary font-bold active:scale-90 w-16 group";
+          btn.className = "flex flex-col items-center justify-center text-primary font-bold active:scale-90 w-[96px] group";
           const iconDiv = btn.querySelector("div");
           if (iconDiv) iconDiv.className = "p-xs rounded-full mb-xs bg-primary/10 transition-colors";
         }
@@ -304,10 +309,10 @@ function switchTab(viewName, state = 'active') {
         const icon = btn.querySelector('.material-symbols-outlined');
         if (icon) icon.style.fontVariationSettings = "'FILL' 1";
       } else {
-        btn.className = "flex flex-col items-center justify-center text-on-surface-variant active:scale-90 hover:text-primary-fixed-dim transition-all w-[64px] h-[48px] gap-1";
+        btn.className = "flex flex-col items-center justify-center text-on-surface-variant active:scale-90 hover:text-primary-fixed-dim transition-all w-[96px] h-[48px] gap-1";
         
         if (state === 'empty') {
-          btn.className = "flex flex-col items-center justify-center text-on-surface-variant hover:text-primary-fixed-dim transition-all active:scale-90 w-16 group";
+          btn.className = "flex flex-col items-center justify-center text-on-surface-variant hover:text-primary-fixed-dim transition-all active:scale-90 w-[96px] group";
           const iconDiv = btn.querySelector("div");
           if (iconDiv) iconDiv.className = "p-xs rounded-full mb-xs group-hover:bg-surface-variant transition-colors";
         }
@@ -347,8 +352,8 @@ function wireTabListeners() {
   const states = ['active', 'empty'];
   
   states.forEach(state => {
-    // Bottom tabs: Bookmarks, Tags, History
-    ['bookmarks', 'tags', 'history'].forEach(tabName => {
+    // Bottom tabs: Bookmarks, History
+    ['bookmarks', 'history'].forEach(tabName => {
       const btn = document.getElementById(`${state}-${tabName}-tab`);
       if (btn) {
         btn.addEventListener('click', () => {
@@ -604,4 +609,126 @@ function escapeHTML(str) {
       '"': '&quot;'
     }[tag] || tag)
   );
+}
+
+const THEME_PRESETS = {
+  cyan: {
+    "--color-primary-rgb": "164 230 255",
+    "--color-primary-container-rgb": "0 209 255",
+    "--color-primary-fixed-dim-rgb": "76 214 255",
+    "--color-on-primary-rgb": "0 53 67",
+    "--color-on-primary-container-rgb": "0 86 106"
+  },
+  red: {
+    "--color-primary-rgb": "255 180 171",
+    "--color-primary-container-rgb": "255 84 73",
+    "--color-primary-fixed-dim-rgb": "255 137 125",
+    "--color-on-primary-rgb": "105 0 5",
+    "--color-on-primary-container-rgb": "65 0 2"
+  },
+  orange: {
+    "--color-primary-rgb": "255 184 121",
+    "--color-primary-container-rgb": "255 159 10",
+    "--color-primary-fixed-dim-rgb": "255 167 38",
+    "--color-on-primary-rgb": "79 37 0",
+    "--color-on-primary-container-rgb": "45 22 0"
+  },
+  green: {
+    "--color-primary-rgb": "142 243 167",
+    "--color-primary-container-rgb": "48 209 88",
+    "--color-primary-fixed-dim-rgb": "97 224 130",
+    "--color-on-primary-rgb": "0 83 31",
+    "--color-on-primary-container-rgb": "0 57 18"
+  },
+  purple: {
+    "--color-primary-rgb": "232 185 255",
+    "--color-primary-container-rgb": "191 90 242",
+    "--color-primary-fixed-dim-rgb": "212 142 255",
+    "--color-on-primary-rgb": "86 0 126",
+    "--color-on-primary-container-rgb": "50 0 74"
+  }
+};
+
+function applyTheme(themeName) {
+  const preset = THEME_PRESETS[themeName] || THEME_PRESETS.cyan;
+  const root = document.documentElement;
+  for (const [key, val] of Object.entries(preset)) {
+    root.style.setProperty(key, val);
+  }
+  
+  // Update dynamic empty state illustration
+  const emptyStateImg = document.getElementById("empty-state-illustration");
+  if (emptyStateImg) {
+    emptyStateImg.src = `images/${themeName}.png`;
+  }
+
+  // Save chosen theme in local storage
+  chrome.storage.local.set({ active_theme: themeName }, () => {
+    notifyContentScriptUpdate();
+  });
+
+  // Update selected UI borders of theme-dots
+  document.querySelectorAll(".theme-dot").forEach(btn => {
+    if (btn.getAttribute("data-theme") === themeName) {
+      btn.classList.add("border-white", "ring-2", "ring-primary-container", "ring-offset-2", "ring-offset-surface-container");
+      btn.classList.remove("border-transparent");
+    } else {
+      btn.classList.remove("border-white", "ring-2", "ring-primary-container", "ring-offset-2", "ring-offset-surface-container");
+      btn.classList.add("border-transparent");
+    }
+  });
+}
+
+function initTheme() {
+  chrome.storage.local.get(["active_theme"], (result) => {
+    const activeTheme = result.active_theme || "cyan";
+    applyTheme(activeTheme);
+  });
+}
+
+function wireSettingsListeners() {
+  document.querySelectorAll(".theme-dot").forEach(btn => {
+    btn.addEventListener("click", () => {
+      const theme = btn.getAttribute("data-theme");
+      applyTheme(theme);
+    });
+  });
+
+  const activeShortcuts = document.getElementById("active-shortcuts-btn");
+  if (activeShortcuts) {
+    activeShortcuts.addEventListener("click", () => {
+      chrome.tabs.create({ url: "chrome://extensions/shortcuts" });
+    });
+  }
+
+  const emptyShortcuts = document.getElementById("empty-shortcuts-btn");
+  if (emptyShortcuts) {
+    emptyShortcuts.addEventListener("click", () => {
+      chrome.tabs.create({ url: "chrome://extensions/shortcuts" });
+    });
+  }
+}
+
+function updateTitleMarquee() {
+  const container = document.getElementById("video-title-container");
+  if (!container || !videoTitle) return;
+
+  // Reset any prior marquee states
+  videoTitle.classList.remove("animate-marquee");
+  videoTitle.style.removeProperty("--marquee-width");
+  videoTitle.style.removeProperty("--marquee-duration");
+
+  // Allow layout calculations to settle
+  setTimeout(() => {
+    const containerWidth = container.offsetWidth;
+    const titleWidth = videoTitle.scrollWidth;
+
+    if (titleWidth > containerWidth) {
+      videoTitle.style.setProperty("--marquee-width", `${containerWidth}px`);
+      // Pace: ~30px per second, min 4s, max 15s
+      const duration = Math.max(4, Math.min(15, (titleWidth - containerWidth) / 30 + 3));
+      videoTitle.style.setProperty("--marquee-duration", `${duration}s`);
+      videoTitle.classList.add("animate-marquee");
+    }
+  }, 100);
 }

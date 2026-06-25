@@ -2,6 +2,14 @@
 @tailwind components;
 @tailwind utilities;
 
+:root {
+    --color-primary-rgb: 164 230 255;
+    --color-primary-container-rgb: 0 209 255;
+    --color-primary-fixed-dim-rgb: 76 214 255;
+    --color-on-primary-rgb: 0 53 67;
+    --color-on-primary-container-rgb: 0 86 106;
+}
+
 html, body {
     margin: 0;
     padding: 0;
@@ -59,8 +67,23 @@ html, body {
     transform: translate(-50%, -50%);
     width: 250px;
     height: 250px;
-    background: radial-gradient(circle, rgba(0, 209, 255, 0.05) 0%, rgba(18, 18, 18, 0) 70%);
+    background: radial-gradient(circle, rgba(var(--color-primary-container-rgb), 0.05) 0%, rgba(18, 18, 18, 0) 70%);
     border-radius: 50%;
     pointer-events: none;
     z-index: 0;
 }
+
+/* Dynamic Scroll Animation (Marquee) */
+@keyframes marquee {
+  0%, 15% {
+    transform: translateX(0);
+  }
+  85%, 100% {
+    transform: translateX(calc(-100% + var(--marquee-width, 100%)));
+  }
+}
+.animate-marquee {
+  display: inline-block;
+  animation: marquee var(--marquee-duration, 8s) linear infinite alternate;
+}
+

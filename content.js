@@ -315,8 +315,19 @@
       const url = getNormalizedUrl(window.location.href);
       const storageKey = `vidmark_bm_${url}`;
 
-      chrome.storage.local.get([storageKey], (result) => {
+      const themeColors = {
+        cyan: '#00d1ff',
+        red: '#ff5449',
+        orange: '#ff9f0a',
+        green: '#30d158',
+        purple: '#bf5af2'
+      };
+
+      chrome.storage.local.get([storageKey, "active_theme"], (result) => {
         const bookmarks = result[storageKey] || [];
+        const theme = result.active_theme || "cyan";
+        const themeColor = themeColors[theme] || '#00d1ff';
+
         if (bookmarks.length === 0) {
           clearUniversalTimeline();
           return;
@@ -337,10 +348,10 @@
           dot.style.top = '50%';
           dot.style.width = '8px';
           dot.style.height = '8px';
-          dot.style.backgroundColor = '#00d1ff';
+          dot.style.backgroundColor = themeColor;
           dot.style.borderRadius = '50%';
           dot.style.transform = 'translate(-50%, -50%)';
-          dot.style.boxShadow = '0 0 8px #00d1ff, 0 0 2px rgba(255,255,255,0.8)';
+          dot.style.boxShadow = `0 0 8px ${themeColor}, 0 0 2px rgba(255,255,255,0.8)`;
           dot.style.zIndex = '2147483646'; 
           dot.style.pointerEvents = 'none';
 
