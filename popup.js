@@ -170,10 +170,8 @@ function showActiveState(videoState) {
   // Populate Video Card Info
   videoTitle.textContent = videoState.title || "Active Video";
   videoTime.textContent = formatTime(videoState.duration);
-  if (videoState.thumbnail) {
-    videoThumbnail.src = videoState.thumbnail;
-    videoThumbnail.alt = videoState.title;
-  }
+  videoThumbnail.src = videoState.thumbnail || 'icons/icon128.png';
+  videoThumbnail.alt = videoState.title || 'Video Thumbnail';
 
   const normalizedUrl = getNormalizedUrl(videoState.url);
   const storageKey = `vidmark_bm_${normalizedUrl}`;
@@ -381,7 +379,7 @@ function renderBookmarks(bookmarks, storageKey) {
     entry.innerHTML = `
       <!-- Thumbnail frame canvas snapshot -->
       <div class="relative w-[56px] h-[36px] bg-surface-container-low rounded overflow-hidden shrink-0 mr-sm flex items-center justify-center border border-white/5">
-        <img class="w-full h-full object-cover" src="${thumbUrl}" alt="Cap"/>
+        <img class="w-full h-full object-cover" src="${thumbUrl}" alt="Cap" onerror="this.onerror=null; this.src='icons/icon48.png';"/>
         <div class="play-overlay absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer">
           <span class="material-symbols-outlined text-white text-[16px] play-trigger" style="font-variation-settings: 'FILL' 1;">play_arrow</span>
         </div>
@@ -503,7 +501,7 @@ function loadHistory() {
           <!-- Main link area (opens tab) -->
           <div class="flex items-center gap-sm flex-1 min-w-0 link-area">
             <div class="relative w-[64px] h-[40px] bg-surface-container-low rounded overflow-hidden shrink-0 border border-white/5">
-              <img class="w-full h-full object-cover" src="${thumbnail}" alt="Thumb"/>
+              <img class="w-full h-full object-cover" src="${thumbnail}" alt="Thumb" onerror="this.onerror=null; this.src='icons/icon48.png';"/>
             </div>
             <div class="flex-1 min-w-0 flex flex-col justify-center">
               <h4 class="font-body-md text-body-md text-on-surface font-semibold truncate leading-tight group-hover:text-primary transition-colors" title="${escapeHTML(title)}">${escapeHTML(title)}</h4>
