@@ -28,15 +28,9 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   return true;
 });
 
-// Clean up frame state mappings on tab close or URL updates
+// Clean up frame state mappings on tab close
 chrome.tabs.onRemoved.addListener((tabId) => {
   delete activeVideoFrames[tabId];
-});
-
-chrome.tabs.onUpdated.addListener((tabId, changeInfo) => {
-  if (changeInfo.status === 'loading') {
-    delete activeVideoFrames[tabId];
-  }
 });
 
 // Listen to the QUICK_MARK command registered in manifest.json

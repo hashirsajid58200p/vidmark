@@ -1,29 +1,22 @@
-// VidMark - Content Script
-
-// Guard against redeclaration errors due to multiple frame injections or SPA routing transitions
-if (window.vidMarkLoaded) {
-  // Re-register frame immediately to recover state mappings if service worker restarted
-  chrome.runtime.sendMessage({ action: "REGISTER_VIDEO_FRAME" }, () => {
-    if (chrome.runtime.lastError) { /* ignore runtime disconnect */ }
-  });
-  
-  // Refresh checkpoints
-  initTimelineCheckpoints();
-} else {
+(function() {
+  if (window.vidMarkLoaded) {
+    chrome.runtime.sendMessage({ action: "REGISTER_VIDEO_FRAME" }, () => {
+      if (chrome.runtime.lastError) { /* ignore runtime disconnect */ }
+    });
+    if (typeof window.initTimelineCheckpoints === 'function') {
+      window.initTimelineCheckpoints();
+    }
+    return;
+  }
   window.vidMarkLoaded = true;
-  initVidMarkContentScript();
-}
 
-function initVidMarkContentScript() {
   // Helper to format seconds into HH:MM:SS or MM:SS
   function formatTime(secs) {
     const s = Math.floor(secs);
     const hours = Math.floor(s / 3600);
     const minutes = Math.floor((s % 3600) / 60);
     const seconds = s % 60;
-
     const pad = (n) => String(n).padStart(2, "0");
-
     if (hours > 0) {
       return `${hours}:${pad(minutes)}:${pad(seconds)}`;
     }
@@ -64,24 +57,16 @@ function initVidMarkContentScript() {
   // Smarter title extractor: extracts YouTube watch title or cleans tab document titles
   function getCleanTitle() {
     let title = "";
-    
-    // Check if on YouTube and try targeting watch metadata title header
     if (window.location.hostname.includes("youtube.com")) {
       const ytTitleEl = document.querySelector('h1.ytd-video-primary-info-renderer, ytd-watch-metadata h1');
       if (ytTitleEl) {
         title = ytTitleEl.textContent.trim();
       }
     }
-    
-    // Fallback to tab document title
     if (!title) {
       title = document.title || "Video";
     }
-    
-    // Clean tab title: strip notification brackets (e.g. "(35) Video Title" or "[12] Video Title")
     title = title.replace(/^\([\d+]+\)\s*/, "").replace(/^\[[\d+]+\]\s*/, "");
-    
-    // Truncate to first 3-4 words
     const words = title.split(/\s+/);
     if (words.length > 4) {
       return words.slice(0, 4).join(" ") + "...";
@@ -89,27 +74,79 @@ function initVidMarkContentScript() {
     return title;
   }
 
-  // Function to find the most appropriate video element on the page
+  // Function to find the most appropriate video element on the page using a robust scoring system
   function findVideo() {
     const videos = Array.from(document.querySelectorAll('video'));
     if (videos.length === 0) return null;
 
-    // 1. If any video is currently playing, prioritize it
-    const playingVideos = videos.filter(v => !v.paused && !v.ended);
-    if (playingVideos.length > 0) {
-      return playingVideos.sort((a, b) => {
-        const aSize = a.offsetWidth * a.offsetHeight;
-        const bSize = b.offsetWidth * b.offsetHeight;
-        return bSize - aSize;
-      })[0];
-    }
+    const scoredVideos = videos.map(v => {
+      const isPlaying = !v.paused && !v.ended;
+      const size = v.offsetWidth * v.offsetHeight;
+      const hasDuration = (v.duration && !isNaN(v.duration) && v.duration > 0);
+      const hasCurrentTime = (v.currentTime && !isNaN(v.currentTime) && v.currentTime > 0);
+      
+      let score = size;
+      if (isPlaying) score += 1000000;
+      if (hasDuration) score += 50000;
+      if (hasCurrentTime) score += 10000;
+      
+      return { video: v, score };
+    });
 
-    // 2. Otherwise, return the largest video element present in the DOM
-    return videos.sort((a, b) => {
-      const aSize = a.offsetWidth * a.offsetHeight;
-      const bSize = b.offsetWidth * b.offsetHeight;
-      return bSize - aSize;
-    })[0];
+    scoredVideos.sort((a, b) => b.score - a.score);
+    return scoredVideos[0].video;
+  }
+
+  // Capture current video frame using Canvas API (CORS handled)
+  function captureVideoFrame(video) {
+    try {
+      const canvas = document.createElement('canvas');
+      canvas.width = video.videoWidth || 320;
+      canvas.height = video.videoHeight || 180;
+      
+      const ctx = canvas.getContext('2d');
+      ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+      
+      return canvas.toDataURL('image/jpeg', 0.5);
+    } catch (e) {
+      console.warn("VidMark: Media frame capture bypassed due to CORS origin constraints or frame load parameters.", e.message);
+      return null;
+    }
+  }
+
+  // Register frame details with service worker background page
+  function registerVideoFrame() {
+    chrome.runtime.sendMessage({ action: "REGISTER_VIDEO_FRAME" }, () => {
+      if (chrome.runtime.lastError) { /* ignore runtime disconnect */ }
+    });
+  }
+
+  // Search for common player progress bar elements
+  function findNativeTimeline() {
+    const selectors = [
+      '.ytp-progress-list',             // YouTube
+      '.vjs-progress-holder',           // Video.js
+      '.vjs-progress-control',
+      '.plyr__progress',                // Plyr
+      '.plyr__progress__container',
+      '.jw-slider-time',                // JW Player
+      '.jw-progress',
+      '.dplayer-bar-wrap',              // DPlayer
+      '.art-control-progress',          // ArtPlayer
+      '.bar-container',                 // Clappr
+      '.wmp-progress-bar',              // Generic styles
+      '[class*="progress-bar"]',        // Class pattern matching
+      '[class*="progress-control"]',
+      '[class*="progress-holder"]'
+    ];
+
+    for (const selector of selectors) {
+      const el = document.querySelector(selector);
+      if (el && el.offsetWidth > 0 && el.offsetHeight > 0) {
+        return el;
+      }
+    }
+    return null;
   }
 
   // Helper to clear custom universal overlay progress timelines
@@ -118,11 +155,12 @@ function initVidMarkContentScript() {
     if (el) el.remove();
   }
 
-  // Get YouTube progress bar OR create a custom absolute-positioned universal timeline
+  // Get native progress bar OR create a custom invisible timeline container
   function getOrCreateUniversalTimeline(video) {
-    const ytProgress = document.querySelector('.ytp-progress-list');
-    if (ytProgress) {
-      return ytProgress;
+    const nativeTimeline = findNativeTimeline();
+    if (nativeTimeline) {
+      clearUniversalTimeline();
+      return nativeTimeline;
     }
 
     let universalTimeline = document.querySelector('.vidmark-universal-timeline');
@@ -130,17 +168,17 @@ function initVidMarkContentScript() {
       universalTimeline = document.createElement('div');
       universalTimeline.className = 'vidmark-universal-timeline';
       
+      // Absolute positioning at the bottom, but transparent and height-less so it doesn't draw a second line
       universalTimeline.style.position = 'absolute';
-      universalTimeline.style.bottom = '12px';
-      universalTimeline.style.left = '16px';
-      universalTimeline.style.right = '16px';
-      universalTimeline.style.height = '4px';
-      universalTimeline.style.backgroundColor = 'rgba(255, 255, 255, 0.2)';
-      universalTimeline.style.borderRadius = '2px';
+      universalTimeline.style.bottom = '8px';
+      universalTimeline.style.left = '12px';
+      universalTimeline.style.right = '12px';
+      universalTimeline.style.height = '0px';
+      universalTimeline.style.backgroundColor = 'transparent';
       universalTimeline.style.zIndex = '2147483645'; 
       universalTimeline.style.pointerEvents = 'none';
 
-      // Enforce relative position on parent to position absolute children correctly
+      // Enforce relative positioning on the parent container
       const parent = video.parentElement;
       if (window.getComputedStyle(parent).position === 'static') {
         parent.style.position = 'relative';
@@ -200,42 +238,30 @@ function initVidMarkContentScript() {
     }
   }
 
-  // Capture current video frame using Canvas API (CORS handled)
-  function captureVideoFrame(video) {
-    try {
-      const canvas = document.createElement('canvas');
-      canvas.width = video.videoWidth || 320;
-      canvas.height = video.videoHeight || 180;
-      
-      const ctx = canvas.getContext('2d');
-      ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-      
-      return canvas.toDataURL('image/jpeg', 0.5);
-    } catch (e) {
-      console.warn("VidMark: Media frame capture bypassed due to CORS origin constraints or frame load parameters.", e.message);
-      return null;
-    }
-  }
-
-  // Register frame details with service worker background page
-  function registerVideoFrame() {
-    chrome.runtime.sendMessage({ action: "REGISTER_VIDEO_FRAME" }, () => {
-      if (chrome.runtime.lastError) { /* ignore runtime disconnect */ }
-    });
-  }
-
-  // Hook up video metadata/duration listeners to re-render dots
+  // Hook up video metadata/duration/play/pause listeners to re-render dots and re-register frames
   function initTimelineCheckpoints() {
     const video = findVideo();
     if (video) {
       video.removeEventListener('durationchange', renderTimelineCheckpoints);
       video.removeEventListener('loadedmetadata', renderTimelineCheckpoints);
+      video.removeEventListener('play', handleVideoStateChange);
+      video.removeEventListener('pause', handleVideoStateChange);
       
       video.addEventListener('durationchange', renderTimelineCheckpoints);
       video.addEventListener('loadedmetadata', renderTimelineCheckpoints);
+      video.addEventListener('play', handleVideoStateChange);
+      video.addEventListener('pause', handleVideoStateChange);
     }
     renderTimelineCheckpoints();
   }
+
+  function handleVideoStateChange() {
+    registerVideoFrame();
+    renderTimelineCheckpoints();
+  }
+
+  // Expose function for reinjections
+  window.initTimelineCheckpoints = initTimelineCheckpoints;
 
   // Listen for messages from the popup UI or background service worker
   chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
@@ -249,8 +275,8 @@ function initVidMarkContentScript() {
       const url = getNormalizedUrl(window.location.href);
       const ytId = getYoutubeVideoId(url);
       
-      // Fallback: If not YouTube, immediately grab canvas screen capture to use as header main thumbnail
-      const thumbnail = ytId ? `https://img.youtube.com/vi/${ytId}/hqdefault.jpg` : captureVideoFrame(video);
+      // If not YouTube, prioritize video.poster before falling back to canvas screenshot capture
+      const thumbnail = ytId ? `https://img.youtube.com/vi/${ytId}/hqdefault.jpg` : (video.poster || captureVideoFrame(video));
       const cleanTitle = getCleanTitle();
 
       sendResponse({
@@ -361,99 +387,4 @@ function initVidMarkContentScript() {
       initTimelineCheckpoints();
     }, 3000); 
   });
-}
-
-// Global timeline dot checkpoints refresh helper
-function initTimelineCheckpoints() {
-  const ytProgress = document.querySelector('.ytp-progress-list');
-  const universalTimeline = document.querySelector('.vidmark-universal-timeline');
-  const checkpoints = document.querySelectorAll('.vidmark-checkpoint');
-  
-  // If checkpoints list is already rendered, skip redrawing
-  if (checkpoints.length > 0 && (ytProgress || universalTimeline)) {
-    return;
-  }
-  
-  // Find video element
-  const video = Array.from(document.querySelectorAll('video')).sort((a, b) => {
-    const aSize = a.offsetWidth * a.offsetHeight;
-    const bSize = b.offsetWidth * b.offsetHeight;
-    return bSize - aSize;
-  })[0];
-  
-  if (!video || !video.duration) return;
-
-  const getNormalizedUrl = (rawUrl) => {
-    try {
-      const url = new URL(rawUrl);
-      url.searchParams.delete('t');
-      url.searchParams.delete('time_continue');
-      url.searchParams.delete('start');
-      if (url.hash && url.hash.startsWith('#t=')) {
-        url.hash = '';
-      }
-      return url.toString();
-    } catch (e) {
-      return rawUrl;
-    }
-  };
-
-  const url = getNormalizedUrl(window.location.href);
-  const storageKey = `vidmark_bm_${url}`;
-
-  chrome.storage.local.get([storageKey], (result) => {
-    const bookmarks = result[storageKey] || [];
-    if (bookmarks.length === 0) return;
-
-    let progressContainer = ytProgress;
-    if (!progressContainer) {
-      if (!universalTimeline && video.parentElement) {
-        progressContainer = document.createElement('div');
-        progressContainer.className = 'vidmark-universal-timeline';
-        progressContainer.style.position = 'absolute';
-        progressContainer.style.bottom = '12px';
-        progressContainer.style.left = '16px';
-        progressContainer.style.right = '16px';
-        progressContainer.style.height = '4px';
-        progressContainer.style.backgroundColor = 'rgba(255, 255, 255, 0.2)';
-        progressContainer.style.borderRadius = '2px';
-        progressContainer.style.zIndex = '2147483645';
-        progressContainer.style.pointerEvents = 'none';
-
-        const parent = video.parentElement;
-        if (window.getComputedStyle(parent).position === 'static') {
-          parent.style.position = 'relative';
-        }
-        parent.appendChild(progressContainer);
-      } else {
-        progressContainer = universalTimeline;
-      }
-    }
-
-    if (!progressContainer) return;
-    
-    // Clear old checkpoints
-    document.querySelectorAll('.vidmark-checkpoint').forEach(el => el.remove());
-
-    bookmarks.forEach(bm => {
-      const pct = (bm.time / video.duration) * 100;
-      if (isNaN(pct) || pct < 0 || pct > 100) return;
-
-      const dot = document.createElement('div');
-      dot.className = 'vidmark-checkpoint';
-      dot.style.position = 'absolute';
-      dot.style.left = `${pct}%`;
-      dot.style.top = '50%';
-      dot.style.width = '8px';
-      dot.style.height = '8px';
-      dot.style.backgroundColor = '#00d1ff';
-      dot.style.borderRadius = '50%';
-      dot.style.transform = 'translate(-50%, -50%)';
-      dot.style.boxShadow = '0 0 8px #00d1ff, 0 0 2px rgba(255,255,255,0.8)';
-      dot.style.zIndex = '2147483646';
-      dot.style.pointerEvents = 'none';
-
-      progressContainer.appendChild(dot);
-    });
-  });
-}
+})();
