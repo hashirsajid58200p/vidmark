@@ -2,7 +2,6 @@
 
 document.addEventListener("DOMContentLoaded", () => {
   initTheme();
-  loadLogo();
   initPopup();
   wireTabListeners();
   wireSettingsListeners();
@@ -190,7 +189,7 @@ function showActiveState(videoState) {
   // Populate Video Card Info
   videoTitle.textContent = videoState.title || "Active Video";
   videoTime.textContent = formatTime(videoState.duration);
-  videoThumbnail.src = videoState.thumbnail || 'icons/logo.svg';
+  videoThumbnail.src = videoState.thumbnail || 'icons/logo.png';
   videoThumbnail.alt = videoState.title || 'Video Thumbnail';
 
   // Apply marquee animation if title is too long
@@ -408,12 +407,12 @@ function renderBookmarks(bookmarks, storageKey) {
     const entry = document.createElement("div");
     entry.className = "flex items-center justify-between py-sm border-b border-white/5 group z-10 bookmark-item-row";
 
-    const thumbUrl = bm.thumbnail || 'icons/logo.svg';
+    const thumbUrl = bm.thumbnail || 'icons/logo.png';
 
     entry.innerHTML = `
       <!-- Thumbnail frame canvas snapshot -->
       <div class="relative w-[56px] h-[36px] bg-surface-container-low rounded overflow-hidden shrink-0 mr-sm flex items-center justify-center border border-white/5">
-        <img class="w-full h-full object-cover" src="${thumbUrl}" alt="Cap" onerror="this.onerror=null; this.src='icons/logo.svg';"/>
+        <img class="w-full h-full object-cover" src="${thumbUrl}" alt="Cap" onerror="this.onerror=null; this.src='icons/logo.png';"/>
         <div class="play-overlay absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer">
           <span class="material-symbols-outlined text-white text-[16px] play-trigger" style="font-variation-settings: 'FILL' 1;">play_arrow</span>
         </div>
@@ -526,7 +525,7 @@ function loadHistory() {
         // Smarter Title & Thumbnail parsing: grab first item notes and frames
         const firstBm = bookmarks[0];
         const title = firstBm.note || "Annotated Video Link";
-        const thumbnail = bookmarks.find(b => b.thumbnail)?.thumbnail || 'icons/logo.svg';
+        const thumbnail = bookmarks.find(b => b.thumbnail)?.thumbnail || 'icons/logo.png';
 
         const item = document.createElement("div");
         item.className = "flex items-center gap-sm p-sm bg-surface-container rounded-lg border border-white/5 hover:border-primary/20 transition-all cursor-pointer group active:scale-[0.98]";
@@ -535,7 +534,7 @@ function loadHistory() {
           <!-- Main link area (opens tab) -->
           <div class="flex items-center gap-sm flex-1 min-w-0 link-area">
             <div class="relative w-[64px] h-[40px] bg-surface-container-low rounded overflow-hidden shrink-0 border border-white/5">
-              <img class="w-full h-full object-cover" src="${thumbnail}" alt="Thumb" onerror="this.onerror=null; this.src='icons/logo.svg';"/>
+              <img class="w-full h-full object-cover" src="${thumbnail}" alt="Thumb" onerror="this.onerror=null; this.src='icons/logo.png';"/>
             </div>
             <div class="flex-1 min-w-0 flex flex-col justify-center">
               <h4 class="font-body-md text-body-md text-on-surface font-semibold truncate leading-tight group-hover:text-primary transition-colors" title="${escapeHTML(title)}">${escapeHTML(title)}</h4>
@@ -628,35 +627,40 @@ const THEME_PRESETS = {
     "--color-primary-container-rgb": "0 209 255",
     "--color-primary-fixed-dim-rgb": "76 214 255",
     "--color-on-primary-rgb": "0 53 67",
-    "--color-on-primary-container-rgb": "0 86 106"
+    "--color-on-primary-container-rgb": "0 86 106",
+    "--logo-filter": "none"
   },
   red: {
     "--color-primary-rgb": "255 180 171",
     "--color-primary-container-rgb": "255 84 73",
     "--color-primary-fixed-dim-rgb": "255 137 125",
     "--color-on-primary-rgb": "105 0 5",
-    "--color-on-primary-container-rgb": "65 0 2"
+    "--color-on-primary-container-rgb": "65 0 2",
+    "--logo-filter": "hue-rotate(173deg) brightness(1.1)"
   },
   orange: {
     "--color-primary-rgb": "255 184 121",
     "--color-primary-container-rgb": "255 159 10",
     "--color-primary-fixed-dim-rgb": "255 167 38",
     "--color-on-primary-rgb": "79 37 0",
-    "--color-on-primary-container-rgb": "45 22 0"
+    "--color-on-primary-container-rgb": "45 22 0",
+    "--logo-filter": "hue-rotate(206deg)"
   },
   green: {
     "--color-primary-rgb": "142 243 167",
     "--color-primary-container-rgb": "48 209 88",
     "--color-primary-fixed-dim-rgb": "97 224 130",
     "--color-on-primary-rgb": "0 83 31",
-    "--color-on-primary-container-rgb": "0 57 18"
+    "--color-on-primary-container-rgb": "0 57 18",
+    "--logo-filter": "hue-rotate(295deg) saturate(0.8)"
   },
   purple: {
     "--color-primary-rgb": "232 185 255",
     "--color-primary-container-rgb": "191 90 242",
     "--color-primary-fixed-dim-rgb": "212 142 255",
     "--color-on-primary-rgb": "86 0 126",
-    "--color-on-primary-container-rgb": "50 0 74"
+    "--color-on-primary-container-rgb": "50 0 74",
+    "--logo-filter": "hue-rotate(89deg) brightness(1.2)"
   }
 };
 
@@ -751,24 +755,4 @@ function updatePlayOverlayIcon(paused) {
   }
 }
 
-async function loadLogo() {
-  try {
-    const response = await fetch('icons/logo.svg');
-    let svgText = await response.text();
-    // Replace the hardcoded background fill with a CSS variable fill
-    svgText = svgText.replace('fill="#00d1ff"', 'fill="rgb(var(--color-primary-container-rgb))"');
-    
-    // Inject into logo containers
-    document.querySelectorAll(".logo-container").forEach(el => {
-      el.innerHTML = svgText;
-      const svg = el.querySelector("svg");
-      if (svg) {
-        svg.setAttribute("class", "w-6 h-6 shrink-0");
-        svg.removeAttribute("width");
-        svg.removeAttribute("height");
-      }
-    });
-  } catch (e) {
-    console.error("Failed to load SVG logo:", e);
-  }
-}
+
