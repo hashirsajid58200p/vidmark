@@ -232,6 +232,24 @@
       </div>
     </div>
 
+    <!-- Custom Alert Modal -->
+    <div id="alert-modal" class="absolute inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center hidden">
+      <div class="bg-surface-container border border-white/10 rounded-xl p-md m-md w-full max-w-[300px] flex flex-col gap-md shadow-2xl scale-95 transition-all duration-200" id="alert-modal-card">
+        <div class="flex items-start gap-sm">
+          <span class="material-symbols-outlined text-[24px] text-primary shrink-0" style="font-variation-settings: 'FILL' 1;">info</span>
+          <div class="flex flex-col gap-xs">
+            <h3 class="font-headline-md text-headline-md-mobile text-on-surface font-semibold" id="alert-modal-title">Notification</h3>
+            <p class="font-body-md text-body-md text-on-surface-variant leading-relaxed break-words" id="alert-modal-message">Message details go here.</p>
+          </div>
+        </div>
+        <div class="flex justify-end mt-sm">
+          <button id="alert-modal-ok" class="bg-primary hover:bg-primary/90 text-on-primary rounded-lg py-[8px] px-md font-semibold text-body-md transition-all active:scale-[0.98]">
+            OK
+          </button>
+        </div>
+      </div>
+    </div>
+
   </div> <!-- app-wrapper -->
 
   <script src="popup.js"></script>

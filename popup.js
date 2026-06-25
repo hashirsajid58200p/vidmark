@@ -74,6 +74,42 @@ function showConfirm(titleText, messageText) {
   });
 }
 
+// Helper to display a custom alert modal overlay inside the popup bounds
+function showAlert(titleText, messageText) {
+  return new Promise((resolve) => {
+    const modal = document.getElementById("alert-modal");
+    const modalTitle = document.getElementById("alert-modal-title");
+    const modalMessage = document.getElementById("alert-modal-message");
+    const okBtn = document.getElementById("alert-modal-ok");
+    const card = document.getElementById("alert-modal-card");
+
+    modalTitle.textContent = titleText;
+    modalMessage.textContent = messageText;
+
+    // Show overlay
+    modal.classList.remove("hidden");
+    
+    // Animate scale in
+    requestAnimationFrame(() => {
+      card.classList.remove("scale-95");
+      card.classList.add("scale-100");
+    });
+
+    const cleanup = () => {
+      card.classList.remove("scale-100");
+      card.classList.add("scale-95");
+      setTimeout(() => {
+        modal.classList.add("hidden");
+      }, 150);
+      
+      okBtn.onclick = null;
+      resolve();
+    };
+
+    okBtn.onclick = cleanup;
+  });
+}
+
 // Initialize the extension popup
 async function initPopup() {
   try {
@@ -153,7 +189,7 @@ function showActiveState(videoState) {
     // Send QUICK_MARK to content script in targeted frame
     chrome.tabs.sendMessage(currentTabId, { action: "QUICK_MARK" }, { frameId: activeFrameId }, (response) => {
       if (chrome.runtime.lastError || !response || !response.success) {
-        alert("Failed to save bookmark. Is there a video playing on the active tab?");
+        showAlert("Bookmark Failed", "Failed to save bookmark. Is there a video playing on the active tab?");
         return;
       }
       loadBookmarks(storageKey);
