@@ -189,7 +189,7 @@ function showActiveState(videoState) {
   // Populate Video Card Info
   videoTitle.textContent = videoState.title || "Active Video";
   videoTime.textContent = formatTime(videoState.duration);
-  videoThumbnail.src = videoState.thumbnail || 'icons/logo.png';
+  videoThumbnail.src = videoState.thumbnail || 'icons/light.png';
   videoThumbnail.alt = videoState.title || 'Video Thumbnail';
 
   // Apply marquee animation if title is too long
@@ -407,12 +407,12 @@ function renderBookmarks(bookmarks, storageKey) {
     const entry = document.createElement("div");
     entry.className = "flex items-center justify-between py-sm border-b border-white/5 group z-10 bookmark-item-row";
 
-    const thumbUrl = bm.thumbnail || 'icons/logo.png';
+    const thumbUrl = bm.thumbnail || 'icons/light.png';
 
     entry.innerHTML = `
       <!-- Thumbnail frame canvas snapshot -->
       <div class="relative w-[56px] h-[36px] bg-surface-container-low rounded overflow-hidden shrink-0 mr-sm flex items-center justify-center border border-white/5">
-        <img class="w-full h-full object-cover" src="${thumbUrl}" alt="Cap" onerror="this.onerror=null; this.src='icons/logo.png';"/>
+        <img class="w-full h-full object-cover" src="${thumbUrl}" alt="Cap" onerror="this.onerror=null; this.src='icons/light.png';"/>
         <div class="play-overlay absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer">
           <span class="material-symbols-outlined text-white text-[16px] play-trigger" style="font-variation-settings: 'FILL' 1;">play_arrow</span>
         </div>
@@ -525,7 +525,7 @@ function loadHistory() {
         // Smarter Title & Thumbnail parsing: grab first item notes and frames
         const firstBm = bookmarks[0];
         const title = firstBm.note || "Annotated Video Link";
-        const thumbnail = bookmarks.find(b => b.thumbnail)?.thumbnail || 'icons/logo.png';
+        const thumbnail = bookmarks.find(b => b.thumbnail)?.thumbnail || 'icons/light.png';
 
         const item = document.createElement("div");
         item.className = "flex items-center gap-sm p-sm bg-surface-container rounded-lg border border-white/5 hover:border-primary/20 transition-all cursor-pointer group active:scale-[0.98]";
@@ -534,7 +534,7 @@ function loadHistory() {
           <!-- Main link area (opens tab) -->
           <div class="flex items-center gap-sm flex-1 min-w-0 link-area">
             <div class="relative w-[64px] h-[40px] bg-surface-container-low rounded overflow-hidden shrink-0 border border-white/5">
-              <img class="w-full h-full object-cover" src="${thumbnail}" alt="Thumb" onerror="this.onerror=null; this.src='icons/logo.png';"/>
+              <img class="w-full h-full object-cover" src="${thumbnail}" alt="Thumb" onerror="this.onerror=null; this.src='icons/light.png';"/>
             </div>
             <div class="flex-1 min-w-0 flex flex-col justify-center">
               <h4 class="font-body-md text-body-md text-on-surface font-semibold truncate leading-tight group-hover:text-primary transition-colors" title="${escapeHTML(title)}">${escapeHTML(title)}</h4>
@@ -631,36 +631,36 @@ const THEME_PRESETS = {
     "--theme-filter": "none"
   },
   red: {
-    "--color-primary-rgb": "255 180 171",
-    "--color-primary-container-rgb": "255 84 73",
-    "--color-primary-fixed-dim-rgb": "255 137 125",
-    "--color-on-primary-rgb": "105 0 5",
-    "--color-on-primary-container-rgb": "65 0 2",
-    "--theme-filter": "hue-rotate(173deg) brightness(1.1)"
+    "--color-primary-rgb": "248 113 113",
+    "--color-primary-container-rgb": "220 38 38",
+    "--color-primary-fixed-dim-rgb": "252 165 165",
+    "--color-on-primary-rgb": "127 29 29",
+    "--color-on-primary-container-rgb": "153 27 27",
+    "--theme-filter": "hue-rotate(169deg) brightness(0.85)"
   },
   orange: {
-    "--color-primary-rgb": "255 184 121",
-    "--color-primary-container-rgb": "255 159 10",
-    "--color-primary-fixed-dim-rgb": "255 167 38",
-    "--color-on-primary-rgb": "79 37 0",
-    "--color-on-primary-container-rgb": "45 22 0",
-    "--theme-filter": "hue-rotate(206deg)"
+    "--color-primary-rgb": "245 158 11",
+    "--color-primary-container-rgb": "217 119 6",
+    "--color-primary-fixed-dim-rgb": "253 186 116",
+    "--color-on-primary-rgb": "124 45 18",
+    "--color-on-primary-container-rgb": "154 52 18",
+    "--theme-filter": "hue-rotate(201deg) brightness(0.85)"
   },
   green: {
-    "--color-primary-rgb": "142 243 167",
-    "--color-primary-container-rgb": "48 209 88",
-    "--color-primary-fixed-dim-rgb": "97 224 130",
-    "--color-on-primary-rgb": "0 83 31",
-    "--color-on-primary-container-rgb": "0 57 18",
-    "--theme-filter": "hue-rotate(295deg) saturate(0.8)"
+    "--color-primary-rgb": "74 222 128",
+    "--color-primary-container-rgb": "22 163 74",
+    "--color-primary-fixed-dim-rgb": "134 239 172",
+    "--color-on-primary-rgb": "20 83 45",
+    "--color-on-primary-container-rgb": "22 101 52",
+    "--theme-filter": "hue-rotate(311deg) brightness(0.8)"
   },
   purple: {
-    "--color-primary-rgb": "232 185 255",
-    "--color-primary-container-rgb": "191 90 242",
-    "--color-primary-fixed-dim-rgb": "212 142 255",
-    "--color-on-primary-rgb": "86 0 126",
-    "--color-on-primary-container-rgb": "50 0 74",
-    "--theme-filter": "hue-rotate(89deg) brightness(1.2)"
+    "--color-primary-rgb": "192 132 252",
+    "--color-primary-container-rgb": "147 51 234",
+    "--color-primary-fixed-dim-rgb": "216 180 254",
+    "--color-on-primary-rgb": "88 28 135",
+    "--color-on-primary-container-rgb": "107 33 168",
+    "--theme-filter": "hue-rotate(80deg) brightness(0.85)"
   }
 };
 
@@ -698,6 +698,12 @@ function applyThemeMode(mode) {
     root.classList.add("dark");
   }
   
+  // Update header logo src based on theme mode
+  const logoSrc = mode === "light" ? "icons/dark.png" : "icons/light.png";
+  document.querySelectorAll(".logo-img").forEach(img => {
+    img.src = logoSrc;
+  });
+
   chrome.storage.local.set({ theme_mode: mode });
   updateThemeModeToggleUI(mode);
 }
