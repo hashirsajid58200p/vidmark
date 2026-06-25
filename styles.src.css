@@ -23,6 +23,7 @@
     --color-on-background: #e5e2e1;
     --color-on-surface-rgb: 229 226 225;
     --color-border-opacity: 0.1;
+    --color-outline-variant: rgba(255, 255, 255, 0.1);
     --app-wrapper-bg: #1e1e1e;
 }
 
@@ -41,6 +42,7 @@ html.light {
     --color-on-background: #1c1e22;
     --color-on-surface-rgb: 28 30 34;
     --color-border-opacity: 0.08;
+    --color-outline-variant: rgba(0, 0, 0, 0.08);
     --app-wrapper-bg: #ffffff;
 }
 

@@ -43,7 +43,7 @@ module.exports = {
         "on-error": "#690005",
         "on-secondary-container": "#b7b5b4",
         "secondary-container": "#474746",
-        "outline-variant": "#3c494e",
+        "outline-variant": "var(--color-outline-variant)",
         "on-surface-variant": "var(--color-on-surface-variant)",
         "tertiary": "#ffd59c",
         "on-background": "var(--color-on-background)",

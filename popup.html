@@ -21,7 +21,7 @@
     <!-- Shown when a video is found on the active page                    -->
     <!-- ================================================================= -->
     <div id="active-state" class="w-full h-full flex flex-col" style="display: none;">
-      <header class="bg-surface dark:bg-surface text-primary dark:text-primary flex justify-between items-center px-md py-sm w-full border-b border-white/10 bg-surface/80 backdrop-blur-md z-10 shrink-0">
+      <header class="bg-surface text-primary flex justify-between items-center px-md py-sm w-full border-b border-outline-variant z-10 shrink-0">
         <div class="font-headline-md text-headline-md-mobile font-bold text-primary dark:text-primary flex items-center gap-2">
           <img src="icons/light.png" class="logo-img w-6 h-6 shrink-0" alt="VidMark Logo"/>
           VidMark
@@ -42,7 +42,7 @@
         <!-- Bookmarks View -->
         <div id="active-bookmarks-view" class="w-full flex flex-col flex-1">
           <!-- Video Info Card -->
-          <div class="m-md bg-surface-container p-gutter rounded-[16px] border border-white/10 video-border transition-colors duration-500 video-card flex gap-gutter items-center shrink-0">
+          <div class="m-md bg-surface-container p-gutter rounded-[16px] border border-outline-variant video-border transition-colors duration-500 video-card flex gap-gutter items-center shrink-0">
             <div id="video-thumbnail-container" class="relative w-20 h-14 bg-surface-variant rounded-lg overflow-hidden shrink-0 cursor-pointer">
               <img id="video-thumbnail" class="w-full h-full object-cover" src="icons/light.png" alt="Video Thumbnail" onerror="this.onerror=null; this.src='icons/light.png';"/>
               <div class="play-overlay absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 transition-opacity duration-300">
@@ -82,7 +82,7 @@
           
           <div class="flex flex-col gap-sm flex-1">
             <!-- Keyboard Shortcuts Config -->
-            <div class="flex flex-col gap-xs p-sm bg-surface-container rounded-lg border border-white/5">
+            <div class="flex flex-col gap-xs p-sm bg-surface-container rounded-lg border border-outline-variant">
               <span class="font-body-md text-on-surface font-semibold">Keyboard Shortcuts</span>
               <p class="text-[12px] text-on-surface-variant leading-relaxed mb-sm">Customize hotkeys (like <code class="bg-surface-variant px-1 rounded text-primary">Ctrl+Shift+K</code>) for bookmarking.</p>
               <button id="active-shortcuts-btn" class="w-full bg-primary-container text-on-primary-container font-semibold rounded-lg py-sm text-body-md hover:bg-primary transition-colors flex items-center justify-center gap-1 active:scale-95">
@@ -92,7 +92,7 @@
             </div>
 
             <!-- Theme Color Selector -->
-            <div class="flex flex-col gap-xs p-sm bg-surface-container rounded-lg border border-white/5">
+            <div class="flex flex-col gap-xs p-sm bg-surface-container rounded-lg border border-outline-variant">
               <span class="font-body-md text-on-surface font-semibold">Theme Accent Color</span>
               <p class="text-[12px] text-on-surface-variant leading-relaxed mb-sm">Select a color variation to customize the extension style.</p>
               <div class="flex items-center gap-sm justify-start select-none">
@@ -105,7 +105,7 @@
             </div>
 
             <!-- Theme Mode Selector -->
-            <div class="flex items-center justify-between p-sm bg-surface-container rounded-lg border border-white/5">
+            <div class="flex items-center justify-between p-sm bg-surface-container rounded-lg border border-outline-variant">
               <div class="flex flex-col gap-xs pr-sm">
                 <span class="font-body-md text-on-surface font-semibold">Dark Theme</span>
                 <p class="text-[12px] text-on-surface-variant leading-relaxed">Toggle between dark and light modes.</p>
@@ -134,7 +134,7 @@
       </main>
 
       <!-- BottomNavBar (Integrated from active.html) -->
-      <nav class="absolute bottom-0 w-full z-10 flex justify-around items-center py-xs px-md bg-surface-container/90 backdrop-blur-lg border-t border-white/5 shadow-md">
+      <nav class="absolute bottom-0 w-full z-10 flex justify-around items-center py-xs px-md bg-surface-container border-t border-outline-variant shadow-md">
         <button id="active-bookmarks-tab" class="flex flex-col items-center justify-center text-primary font-bold active:scale-90 hover:text-primary-fixed-dim transition-all w-[96px] h-[48px] gap-1">
           <span class="material-symbols-outlined text-[24px]" style="font-variation-settings: 'FILL' 1;">bookmark</span>
           <span class="font-label-sm text-label-sm">Bookmarks</span>
@@ -152,7 +152,7 @@
     <!-- ================================================================= -->
     <div id="empty-state" class="w-full h-full flex flex-col relative" style="display: none;">
       <!-- TopNavBar (Integrated from empty.html) -->
-      <header class="bg-surface dark:bg-surface w-full border-b border-white/10 bg-surface/80 backdrop-blur-md flex justify-between items-center px-md py-sm shrink-0">
+      <header class="bg-surface w-full border-b border-outline-variant flex justify-between items-center px-md py-sm shrink-0">
         <div class="font-headline-md text-headline-md-mobile font-bold text-primary dark:text-primary flex items-center gap-2">
           <img src="icons/light.png" class="logo-img w-6 h-6 shrink-0" alt="VidMark Logo"/>
           VidMark
@@ -202,7 +202,7 @@
           
           <div class="flex flex-col gap-sm flex-1">
             <!-- Keyboard Shortcuts Config -->
-            <div class="flex flex-col gap-xs p-sm bg-surface-container rounded-lg border border-white/5">
+            <div class="flex flex-col gap-xs p-sm bg-surface-container rounded-lg border border-outline-variant">
               <span class="font-body-md text-on-surface font-semibold">Keyboard Shortcuts</span>
               <p class="text-[12px] text-on-surface-variant leading-relaxed mb-sm">Customize hotkeys (like <code class="bg-surface-variant px-1 rounded text-primary">Ctrl+Shift+K</code>) for bookmarking.</p>
               <button id="empty-shortcuts-btn" class="w-full bg-primary-container text-on-primary-container font-semibold rounded-lg py-sm text-body-md hover:bg-primary transition-colors flex items-center justify-center gap-1 active:scale-95">
@@ -212,7 +212,7 @@
             </div>
 
             <!-- Theme Color Selector -->
-            <div class="flex flex-col gap-xs p-sm bg-surface-container rounded-lg border border-white/5">
+            <div class="flex flex-col gap-xs p-sm bg-surface-container rounded-lg border border-outline-variant">
               <span class="font-body-md text-on-surface font-semibold">Theme Accent Color</span>
               <p class="text-[12px] text-on-surface-variant leading-relaxed mb-sm">Select a color variation to customize the extension style.</p>
               <div class="flex items-center gap-sm justify-start select-none">
@@ -225,7 +225,7 @@
             </div>
 
             <!-- Theme Mode Selector -->
-            <div class="flex items-center justify-between p-sm bg-surface-container rounded-lg border border-white/5">
+            <div class="flex items-center justify-between p-sm bg-surface-container rounded-lg border border-outline-variant">
               <div class="flex flex-col gap-xs pr-sm">
                 <span class="font-body-md text-on-surface font-semibold">Dark Theme</span>
                 <p class="text-[12px] text-on-surface-variant leading-relaxed">Toggle between dark and light modes.</p>
@@ -254,7 +254,7 @@
       </main>
 
       <!-- BottomNavBar (Integrated from empty.html) -->
-      <nav class="absolute bottom-0 w-full z-10 bg-surface-container/90 backdrop-blur-lg border-t border-white/5 shadow-md flex justify-around items-center py-xs px-md shrink-0">
+      <nav class="absolute bottom-0 w-full z-10 bg-surface-container border-t border-outline-variant shadow-md flex justify-around items-center py-xs px-md shrink-0">
         <button id="empty-bookmarks-tab" class="flex flex-col items-center justify-center text-primary font-bold active:scale-90 hover:text-primary-fixed-dim transition-all w-[96px] h-[48px] gap-1">
           <span class="material-symbols-outlined text-[24px]" style="font-variation-settings: 'FILL' 1;">bookmark</span>
           <span class="font-label-sm text-label-sm">Bookmarks</span>
@@ -268,7 +268,7 @@
 
     <!-- Custom Confirmation Modal -->
     <div id="confirm-modal" class="absolute inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center hidden">
-      <div class="bg-surface-container border border-white/10 rounded-xl p-md m-md w-full max-w-[300px] flex flex-col gap-md shadow-2xl scale-95 transition-all duration-200" id="confirm-modal-card">
+      <div class="bg-surface-container border border-outline-variant rounded-xl p-md m-md w-full max-w-[300px] flex flex-col gap-md shadow-2xl scale-95 transition-all duration-200" id="confirm-modal-card">
         <div class="flex items-start gap-sm">
           <span class="material-symbols-outlined text-[24px] text-error shrink-0" style="font-variation-settings: 'FILL' 1;">warning</span>
           <div class="flex flex-col gap-xs">
@@ -289,7 +289,7 @@
 
     <!-- Custom Alert Modal -->
     <div id="alert-modal" class="absolute inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center hidden">
-      <div class="bg-surface-container border border-white/10 rounded-xl p-md m-md w-full max-w-[300px] flex flex-col gap-md shadow-2xl scale-95 transition-all duration-200" id="alert-modal-card">
+      <div class="bg-surface-container border border-outline-variant rounded-xl p-md m-md w-full max-w-[300px] flex flex-col gap-md shadow-2xl scale-95 transition-all duration-200" id="alert-modal-card">
         <div class="flex items-start gap-sm">
           <span class="material-symbols-outlined text-[24px] text-primary shrink-0" style="font-variation-settings: 'FILL' 1;">info</span>
           <div class="flex flex-col gap-xs">
