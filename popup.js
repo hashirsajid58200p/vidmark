@@ -14,15 +14,23 @@ const videoTime = document.getElementById("video-time");
 const saveBtn = document.getElementById("save-timestamp");
 const bookmarksList = document.getElementById("bookmarks-list");
 
-// Modal Elements
-const modal = document.getElementById("bookmark-modal");
-const modalTitle = document.getElementById("modal-title");
-const modalInput = document.getElementById("bookmark-note-input");
-const modalCancel = document.getElementById("modal-cancel");
-const modalSave = document.getElementById("modal-save");
-
-let modalResolve = null;
 let currentTabId = null;
+
+// Helper to normalize the URL by stripping seek query parameters
+function getNormalizedUrl(rawUrl) {
+  try {
+    const url = new URL(rawUrl);
+    url.searchParams.delete('t');
+    url.searchParams.delete('time_continue');
+    url.searchParams.delete('start');
+    if (url.hash && url.hash.startsWith('#t=')) {
+      url.hash = '';
+    }
+    return url.toString();
+  } catch (e) {
+    return rawUrl;
+  }
+}
 
 // Initialize the extension popup
 async function initPopup() {
@@ -35,7 +43,6 @@ async function initPopup() {
     
     currentTabId = tab.id;
 
-    // Check if the URL is valid for injection (exclude chrome://, edge://, etc.)
     if (!tab.url || tab.url.startsWith("chrome://") || tab.url.startsWith("edge://") || tab.url.startsWith("about:")) {
       showEmptyState();
       return;
@@ -49,7 +56,6 @@ async function initPopup() {
 
     // Request video state from content script
     chrome.tabs.sendMessage(tab.id, { action: "GET_VIDEO_STATE" }, (response) => {
-      // Handle extension runtime disconnect or lack of response
       if (chrome.runtime.lastError || !response || !response.found) {
         showEmptyState();
       } else {
@@ -84,35 +90,29 @@ function showActiveState(videoState) {
     videoThumbnail.alt = videoState.title;
   }
 
-  const storageKey = `vidmark_bm_${videoState.url}`;
+  const normalizedUrl = getNormalizedUrl(videoState.url);
+  const storageKey = `vidmark_bm_${normalizedUrl}`;
 
   // Load and render existing bookmarks
   loadBookmarks(storageKey);
 
   // Hook up the Add Bookmark button
-  // Remove existing listener to prevent duplicate attachment if refreshed
   saveBtn.replaceWith(saveBtn.cloneNode(true));
   const newSaveBtn = document.getElementById("save-timestamp");
   
   newSaveBtn.addEventListener("click", () => {
-    // Get the exact current timestamp at point of click
-    chrome.tabs.sendMessage(currentTabId, { action: "GET_VIDEO_STATE" }, async (latestState) => {
-      if (chrome.runtime.lastError || !latestState || !latestState.found) {
-        alert("Failed to grab video playtime. Has the video container changed?");
+    // Send QUICK_MARK to content script to perform screenshot and capture
+    chrome.tabs.sendMessage(currentTabId, { action: "QUICK_MARK" }, (response) => {
+      if (chrome.runtime.lastError || !response || !response.success) {
+        alert("Failed to save bookmark. Is there a video playing on the active tab?");
         return;
       }
       
-      const currentTime = latestState.currentTime;
-      const defaultNote = `Bookmark @ ${formatTime(currentTime)}`;
-      
-      const note = await openNoteModal("Add Bookmark", defaultNote);
-      if (note !== null) {
-        saveBookmark(storageKey, currentTime, note || defaultNote);
-      }
+      // Reload the updated bookmarks list
+      loadBookmarks(storageKey);
     });
   });
 
-  // Sync checkpoints on YouTube player immediately on popup open
   notifyContentScriptUpdate();
 }
 
@@ -124,45 +124,20 @@ function loadBookmarks(storageKey) {
   });
 }
 
-// Save a bookmark and sort by timestamp ascending
-function saveBookmark(storageKey, time, note) {
+// Save a bookmark inline update (used after inline editing finishes)
+function saveInlineEdit(time, newNote, storageKey) {
   chrome.storage.local.get([storageKey], (result) => {
     const bookmarks = result[storageKey] || [];
+    const index = bookmarks.findIndex(bm => bm.time === time);
     
-    // Check if bookmark at the exact second already exists, update it if so, otherwise push
-    const existingIndex = bookmarks.findIndex(bm => Math.floor(bm.time) === Math.floor(time));
-    if (existingIndex !== -1) {
-      bookmarks[existingIndex].note = note;
-    } else {
-      bookmarks.push({ time, note });
+    if (index !== -1) {
+      bookmarks[index].note = newNote.trim() || `Bookmark @ ${formatTime(time)}`;
+      chrome.storage.local.set({ [storageKey]: bookmarks }, () => {
+        renderBookmarks(bookmarks, storageKey);
+        notifyContentScriptUpdate();
+      });
     }
-
-    // Sort by playtime ascending
-    bookmarks.sort((a, b) => a.time - b.time);
-
-    chrome.storage.local.set({ [storageKey]: bookmarks }, () => {
-      renderBookmarks(bookmarks, storageKey);
-      notifyContentScriptUpdate();
-    });
   });
-}
-
-// Edit an existing bookmark's note
-async function editBookmark(time, currentNote, storageKey) {
-  const newNote = await openNoteModal("Edit Bookmark Note", currentNote);
-  if (newNote !== null) {
-    chrome.storage.local.get([storageKey], (result) => {
-      const bookmarks = result[storageKey] || [];
-      const index = bookmarks.findIndex(bm => bm.time === time);
-      if (index !== -1) {
-        bookmarks[index].note = newNote || `Bookmark @ ${formatTime(time)}`;
-        chrome.storage.local.set({ [storageKey]: bookmarks }, () => {
-          renderBookmarks(bookmarks, storageKey);
-          notifyContentScriptUpdate();
-        });
-      }
-    });
-  }
 }
 
 // Delete a saved bookmark
@@ -190,9 +165,8 @@ function seekVideo(time) {
 function notifyContentScriptUpdate() {
   if (currentTabId) {
     chrome.tabs.sendMessage(currentTabId, { action: "UPDATE_CHECKPOINTS" }, () => {
-      // Catch runtime disconnect errors silently
       if (chrome.runtime.lastError) {
-        // do nothing
+        // ignore errors silently
       }
     });
   }
@@ -215,10 +189,8 @@ function switchTab(viewName, state = 'active') {
     const btn = document.getElementById(`${state}-${t}-tab`);
     if (btn) {
       if (t === viewName) {
-        // Active visual styles (cyan font tint, bold, filled icon representation)
         btn.className = "flex flex-col items-center justify-center text-primary font-bold active:scale-90 hover:text-primary-fixed-dim transition-all w-[64px] h-[48px] gap-1";
         
-        // Handle variations (e.g. empty-state structure uses a different wrapping div class)
         if (state === 'empty') {
           btn.className = "flex flex-col items-center justify-center text-primary font-bold active:scale-90 w-16 group";
           const iconDiv = btn.querySelector("div");
@@ -228,7 +200,6 @@ function switchTab(viewName, state = 'active') {
         const icon = btn.querySelector('.material-symbols-outlined');
         if (icon) icon.style.fontVariationSettings = "'FILL' 1";
       } else {
-        // Muted styles
         btn.className = "flex flex-col items-center justify-center text-on-surface-variant active:scale-90 hover:text-primary-fixed-dim transition-all w-[64px] h-[48px] gap-1";
         
         if (state === 'empty') {
@@ -315,34 +286,84 @@ function renderBookmarks(bookmarks, storageKey) {
 
   bookmarks.forEach((bm) => {
     const entry = document.createElement("div");
-    entry.className = "flex items-start justify-between py-sm border-b border-white/5 group z-10";
+    entry.className = "flex items-center justify-between py-sm border-b border-white/5 group z-10 bookmark-item-row";
+
+    // Set fallback icon if screenshot is not found (CORS exception)
+    const thumbUrl = bm.thumbnail || 'icons/icon48.png';
 
     entry.innerHTML = `
-      <div class="flex flex-col gap-xs flex-1 pr-gutter min-w-0">
-        <button class="play-chip inline-flex items-center bg-primary/10 text-primary hover:bg-primary/20 rounded px-2 py-1 font-label-sm text-label-sm w-max transition-colors">
-          ${formatTime(bm.time)}
-        </button>
-        <p class="font-body-md text-body-md text-on-surface mt-1 break-words leading-snug">${escapeHTML(bm.note)}</p>
+      <!-- Thumbnail frame canvas snapshot -->
+      <div class="relative w-[56px] h-[36px] bg-surface-container-low rounded overflow-hidden shrink-0 mr-sm flex items-center justify-center border border-white/5">
+        <img class="w-full h-full object-cover" src="${thumbUrl}" alt="Cap"/>
+        <div class="play-overlay absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer">
+          <span class="material-symbols-outlined text-white text-[16px] play-trigger" style="font-variation-settings: 'FILL' 1;">play_arrow</span>
+        </div>
       </div>
-      <div class="flex items-center gap-2 text-on-surface-variant opacity-70 group-hover:opacity-100 transition-opacity mt-1 shrink-0">
-        <button aria-label="Play" class="play-btn hover:text-primary transition-colors flex items-center justify-center">
+      
+      <!-- Bookmark metadata content -->
+      <div class="flex-1 min-w-0 pr-sm flex flex-col">
+        <span class="text-primary font-bold font-label-sm text-label-sm play-trigger cursor-pointer">[${formatTime(bm.time)}]</span>
+        <p class="note-text font-body-md text-body-md text-on-surface truncate-text leading-tight" title="${escapeHTML(bm.note)}">${escapeHTML(bm.note)}</p>
+      </div>
+      
+      <!-- Action buttons -->
+      <div class="flex items-center gap-1 text-on-surface-variant opacity-70 group-hover:opacity-100 transition-opacity shrink-0">
+        <button aria-label="Play" class="play-trigger hover:text-primary transition-colors flex items-center justify-center p-1 rounded-full">
           <span class="material-symbols-outlined text-[18px]">play_arrow</span>
         </button>
-        <button aria-label="Edit" class="edit-btn hover:text-primary transition-colors flex items-center justify-center">
+        <button aria-label="Edit" class="edit-btn hover:text-primary transition-colors flex items-center justify-center p-1 rounded-full">
           <span class="material-symbols-outlined text-[18px]">edit</span>
         </button>
-        <button aria-label="Delete" class="delete-btn hover:text-error transition-colors flex items-center justify-center">
+        <button aria-label="Delete" class="delete-btn hover:text-error transition-colors flex items-center justify-center p-1 rounded-full">
           <span class="material-symbols-outlined text-[18px]">delete</span>
         </button>
       </div>
     `;
 
-    // Direct event listener binding to handle secure executions and parameters
-    entry.querySelectorAll(".play-chip, .play-btn").forEach(btn => {
+    // Direct event listener binding to handle seeks securely
+    entry.querySelectorAll(".play-trigger").forEach(btn => {
       btn.addEventListener("click", () => seekVideo(bm.time));
     });
-    entry.querySelector(".edit-btn").addEventListener("click", () => editBookmark(bm.time, bm.note, storageKey));
+
     entry.querySelector(".delete-btn").addEventListener("click", () => deleteBookmark(bm.time, storageKey));
+
+    // Inline note editing implementation
+    const noteText = entry.querySelector(".note-text");
+    const editBtn = entry.querySelector(".edit-btn");
+    const editIcon = editBtn.querySelector(".material-symbols-outlined");
+
+    editBtn.addEventListener("click", () => {
+      const isEditing = entry.classList.contains("is-editing");
+
+      if (!isEditing) {
+        entry.classList.add("is-editing");
+        editIcon.textContent = "done"; // Toggle to checkmark icon
+        editBtn.classList.remove("hover:text-primary");
+        editBtn.classList.add("text-primary");
+
+        // Swap paragraph display text with editable input
+        const input = document.createElement("input");
+        input.type = "text";
+        input.className = "bg-surface-container-low border-b-2 border-primary text-on-surface rounded px-1 py-xs w-full outline-none font-body-md text-body-md";
+        input.value = bm.note;
+
+        noteText.replaceWith(input);
+        input.focus();
+        input.select();
+
+        // Save inline note state on Enter or reload original list on Escape
+        input.addEventListener("keydown", (e) => {
+          if (e.key === "Enter") {
+            saveInlineEdit(bm.time, input.value, storageKey);
+          } else if (e.key === "Escape") {
+            loadBookmarks(storageKey);
+          }
+        });
+      } else {
+        const input = entry.querySelector("input");
+        saveInlineEdit(bm.time, input.value, storageKey);
+      }
+    });
 
     bookmarksList.appendChild(entry);
   });
@@ -375,48 +396,3 @@ function escapeHTML(str) {
     }[tag] || tag)
   );
 }
-
-// Custom Glassmorphism Note Dialog Modal controls
-function openNoteModal(title, defaultValue = "") {
-  modalTitle.textContent = title;
-  modalInput.value = defaultValue;
-  modal.style.display = "flex";
-  
-  // Smooth fade-in
-  setTimeout(() => {
-    modal.style.opacity = "1";
-    modalInput.focus();
-    modalInput.select();
-  }, 30);
-
-  return new Promise((resolve) => {
-    modalResolve = resolve;
-  });
-}
-
-// Close Note Dialog Modal
-function closeNoteModal() {
-  modal.style.opacity = "0";
-  setTimeout(() => {
-    modal.style.display = "none";
-  }, 200);
-}
-
-modalCancel.addEventListener("click", () => {
-  closeNoteModal();
-  if (modalResolve) modalResolve(null);
-});
-
-modalSave.addEventListener("click", () => {
-  const note = modalInput.value.trim();
-  closeNoteModal();
-  if (modalResolve) modalResolve(note);
-});
-
-modalInput.addEventListener("keydown", (e) => {
-  if (e.key === "Enter") {
-    modalSave.click();
-  } else if (e.key === "Escape") {
-    modalCancel.click();
-  }
-});

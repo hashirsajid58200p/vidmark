@@ -215,23 +215,6 @@
       <div class="h-[72px] w-full shrink-0"></div>
     </div>
 
-    <!-- ================================================================= -->
-    <!-- 3. DIALOG MODAL (Glassmorphic editor overlay for bookmark notes)  -->
-    <!-- ================================================================= -->
-    <div id="bookmark-modal" class="absolute inset-0 bg-surface-container/60 backdrop-blur-md flex items-center justify-center z-50 transition-opacity duration-200" style="display: none; opacity: 0;">
-      <div class="bg-surface-container-high border border-white/10 rounded-xl p-md w-[280px] flex flex-col gap-md shadow-2xl relative">
-        <h3 id="modal-title" class="font-headline-md text-on-surface font-semibold">Add Bookmark</h3>
-        <div class="flex flex-col gap-xs">
-          <label for="bookmark-note-input" class="font-label-sm text-label-sm text-on-surface-variant">Description</label>
-          <input id="bookmark-note-input" type="text" class="bg-surface-container-low border-b-2 border-white/10 focus:border-primary text-on-surface rounded-lg px-sm py-[8px] w-full outline-none transition-colors" placeholder="e.g., Critical concept..." autocomplete="off"/>
-        </div>
-        <div class="flex gap-sm justify-end">
-          <button id="modal-cancel" class="text-on-surface-variant hover:text-on-surface font-body-md py-xs px-sm rounded hover:bg-white/5 transition-colors">Cancel</button>
-          <button id="modal-save" class="bg-primary-container text-on-primary-container font-body-md font-semibold py-xs px-md rounded-lg shadow-md hover:bg-primary transition-colors">Save</button>
-        </div>
-      </div>
-    </div>
-
   </div> <!-- main-container -->
 
   <script src="popup.js"></script>
