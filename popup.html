@@ -211,6 +211,27 @@
       <div class="h-[72px] w-full shrink-0"></div>
     </div>
 
+    <!-- Custom Confirmation Modal -->
+    <div id="confirm-modal" class="absolute inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center hidden">
+      <div class="bg-surface-container border border-white/10 rounded-xl p-md m-md w-full max-w-[300px] flex flex-col gap-md shadow-2xl scale-95 transition-all duration-200" id="confirm-modal-card">
+        <div class="flex items-start gap-sm">
+          <span class="material-symbols-outlined text-[24px] text-error shrink-0" style="font-variation-settings: 'FILL' 1;">warning</span>
+          <div class="flex flex-col gap-xs">
+            <h3 class="font-headline-md text-headline-md-mobile text-on-surface font-semibold" id="confirm-modal-title">Delete Bookmarks?</h3>
+            <p class="font-body-md text-body-md text-on-surface-variant leading-relaxed break-words" id="confirm-modal-message">Are you sure you want to delete all bookmarks for this video?</p>
+          </div>
+        </div>
+        <div class="flex justify-end gap-sm mt-sm">
+          <button id="confirm-modal-cancel" class="bg-surface-variant hover:bg-surface-container-highest text-on-surface rounded-lg py-[8px] px-md font-semibold text-body-md transition-all active:scale-[0.98]">
+            Cancel
+          </button>
+          <button id="confirm-modal-confirm" class="bg-error hover:bg-error/90 text-on-error rounded-lg py-[8px] px-md font-semibold text-body-md transition-all active:scale-[0.98]">
+            Delete
+          </button>
+        </div>
+      </div>
+    </div>
+
   </div> <!-- app-wrapper -->
 
   <script src="popup.js"></script>

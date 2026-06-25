@@ -33,6 +33,47 @@ function getNormalizedUrl(rawUrl) {
   }
 }
 
+// Helper to display a custom confirmation modal overlay inside the popup bounds
+function showConfirm(titleText, messageText) {
+  return new Promise((resolve) => {
+    const modal = document.getElementById("confirm-modal");
+    const modalTitle = document.getElementById("confirm-modal-title");
+    const modalMessage = document.getElementById("confirm-modal-message");
+    const cancelBtn = document.getElementById("confirm-modal-cancel");
+    const confirmBtn = document.getElementById("confirm-modal-confirm");
+    const card = document.getElementById("confirm-modal-card");
+
+    modalTitle.textContent = titleText;
+    modalMessage.textContent = messageText;
+
+    // Show overlay
+    modal.classList.remove("hidden");
+    
+    // Animate scale in
+    requestAnimationFrame(() => {
+      card.classList.remove("scale-95");
+      card.classList.add("scale-100");
+    });
+
+    const cleanup = (result) => {
+      card.classList.remove("scale-100");
+      card.classList.add("scale-95");
+      setTimeout(() => {
+        modal.classList.add("hidden");
+      }, 150);
+      
+      // Clean up event handlers to avoid memory leak
+      cancelBtn.onclick = null;
+      confirmBtn.onclick = null;
+      
+      resolve(result);
+    };
+
+    cancelBtn.onclick = () => cleanup(false);
+    confirmBtn.onclick = () => cleanup(true);
+  });
+}
+
 // Initialize the extension popup
 async function initPopup() {
   try {
@@ -455,18 +496,20 @@ function loadHistory() {
         
         item.querySelector(".delete-history-btn").addEventListener("click", (e) => {
           e.stopPropagation();
-          if (confirm(`Delete all bookmarks for: ${title}?`)) {
-            chrome.storage.local.remove(key, () => {
-              loadHistory();
-              // Also update timeline checkpoints of the active tab if it matches
-              chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
-                const activeTab = tabs[0];
-                if (activeTab && getNormalizedUrl(activeTab.url) === videoUrl) {
-                  initPopup();
-                }
+          showConfirm("Delete History", `Delete all bookmarks for "${title}"?`).then((confirmed) => {
+            if (confirmed) {
+              chrome.storage.local.remove(key, () => {
+                loadHistory();
+                // Also update timeline checkpoints of the active tab if it matches
+                chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
+                  const activeTab = tabs[0];
+                  if (activeTab && getNormalizedUrl(activeTab.url) === videoUrl) {
+                    initPopup();
+                  }
+                });
               });
-            });
-          }
+            }
+          });
         });
 
         listWrapper.appendChild(item);
