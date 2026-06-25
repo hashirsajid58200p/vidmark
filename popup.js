@@ -195,6 +195,22 @@ function showActiveState(videoState) {
   // Apply marquee animation if title is too long
   updateTitleMarquee();
 
+  // Play/pause toggle on clicking main thumbnail container
+  const thumbContainer = document.getElementById("video-thumbnail-container");
+  if (thumbContainer) {
+    updatePlayOverlayIcon(videoState.paused);
+    if (!thumbContainer.dataset.listenerAttached) {
+      thumbContainer.dataset.listenerAttached = "true";
+      thumbContainer.addEventListener("click", () => {
+        chrome.tabs.sendMessage(currentTabId, { action: "TOGGLE_PLAYBACK" }, { frameId: activeFrameId }, (response) => {
+          if (!chrome.runtime.lastError && response && response.success) {
+            updatePlayOverlayIcon(response.paused);
+          }
+        });
+      });
+    }
+  }
+
   const normalizedUrl = getNormalizedUrl(videoState.url);
   const storageKey = `vidmark_bm_${normalizedUrl}`;
 
@@ -731,4 +747,11 @@ function updateTitleMarquee() {
       videoTitle.classList.add("animate-marquee");
     }
   }, 100);
+}
+
+function updatePlayOverlayIcon(paused) {
+  const icon = document.querySelector(".play-overlay span.material-symbols-outlined");
+  if (icon) {
+    icon.textContent = paused ? "play_arrow" : "pause";
+  }
 }

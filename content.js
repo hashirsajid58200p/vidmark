@@ -413,9 +413,30 @@
         url: url,
         currentTime: video.currentTime,
         duration: video.duration || 0,
-        thumbnail: thumbnail
+        thumbnail: thumbnail,
+        paused: video.paused
       });
     } 
+    
+    else if (request.action === "TOGGLE_PLAYBACK") {
+      const video = findVideo();
+      if (video) {
+        if (video.paused) {
+          video.play()
+            .then(() => sendResponse({ success: true, paused: false }))
+            .catch(err => {
+              console.warn("VidMark: Playback play was blocked by browser rules.", err);
+              sendResponse({ success: true, paused: true, blocked: true });
+            });
+        } else {
+          video.pause();
+          sendResponse({ success: true, paused: true });
+        }
+      } else {
+        sendResponse({ success: false, error: "No active video found on page." });
+      }
+      return true;
+    }
     
     else if (request.action === "SEEK_VIDEO") {
       const video = findVideo();
