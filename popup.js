@@ -635,7 +635,7 @@ const THEME_PRESETS = {
     "--color-primary-container-rgb": "220 38 38",
     "--color-primary-fixed-dim-rgb": "252 165 165",
     "--color-on-primary-rgb": "127 29 29",
-    "--color-on-primary-container-rgb": "153 27 27",
+    "--color-on-primary-container-rgb": "255 255 255",
     "--theme-filter": "hue-rotate(169deg) brightness(0.85)"
   },
   orange: {
@@ -643,7 +643,7 @@ const THEME_PRESETS = {
     "--color-primary-container-rgb": "217 119 6",
     "--color-primary-fixed-dim-rgb": "253 186 116",
     "--color-on-primary-rgb": "124 45 18",
-    "--color-on-primary-container-rgb": "154 52 18",
+    "--color-on-primary-container-rgb": "255 255 255",
     "--theme-filter": "hue-rotate(201deg) brightness(0.85)"
   },
   green: {
@@ -651,7 +651,7 @@ const THEME_PRESETS = {
     "--color-primary-container-rgb": "22 163 74",
     "--color-primary-fixed-dim-rgb": "134 239 172",
     "--color-on-primary-rgb": "20 83 45",
-    "--color-on-primary-container-rgb": "22 101 52",
+    "--color-on-primary-container-rgb": "255 255 255",
     "--theme-filter": "hue-rotate(311deg) brightness(0.8)"
   },
   purple: {
@@ -659,7 +659,7 @@ const THEME_PRESETS = {
     "--color-primary-container-rgb": "147 51 234",
     "--color-primary-fixed-dim-rgb": "216 180 254",
     "--color-on-primary-rgb": "88 28 135",
-    "--color-on-primary-container-rgb": "107 33 168",
+    "--color-on-primary-container-rgb": "255 255 255",
     "--theme-filter": "hue-rotate(80deg) brightness(0.85)"
   }
 };

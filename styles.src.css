@@ -30,10 +30,10 @@
 html.light {
     /* Theme Surface/Backgrounds (Light Mode) */
     --color-background: #f4f6fa;
-    --color-surface: #ffffff;
-    --color-surface-container: #edf1f7;
-    --color-surface-container-low: #f5f7fa;
-    --color-surface-container-high: #e4e8f0;
+    --color-surface: #edf1f7;
+    --color-surface-container: #ffffff;
+    --color-surface-container-low: #ffffff;
+    --color-surface-container-high: #edf1f7;
     --color-surface-container-lowest: #ffffff;
     --color-surface-container-highest: #dadfe8;
     --color-surface-variant: #dadfe8;
