@@ -423,18 +423,50 @@ function loadHistory() {
         item.className = "flex items-center gap-sm p-sm bg-surface-container rounded-lg border border-white/5 hover:border-primary/20 transition-all cursor-pointer group active:scale-[0.98]";
 
         item.innerHTML = `
-          <div class="relative w-[64px] h-[40px] bg-surface-container-low rounded overflow-hidden shrink-0 border border-white/5">
-            <img class="w-full h-full object-cover" src="${thumbnail}" alt="Thumb"/>
+          <!-- Main link area (opens tab) -->
+          <div class="flex items-center gap-sm flex-1 min-w-0 link-area">
+            <div class="relative w-[64px] h-[40px] bg-surface-container-low rounded overflow-hidden shrink-0 border border-white/5">
+              <img class="w-full h-full object-cover" src="${thumbnail}" alt="Thumb"/>
+            </div>
+            <div class="flex-1 min-w-0 flex flex-col justify-center">
+              <h4 class="font-body-md text-body-md text-on-surface font-semibold truncate leading-tight group-hover:text-primary transition-colors" title="${escapeHTML(title)}">${escapeHTML(title)}</h4>
+              <p class="font-label-sm text-label-sm text-on-surface-variant mt-xs">${bookmarks.length} bookmark${bookmarks.length > 1 ? 's' : ''}</p>
+            </div>
           </div>
-          <div class="flex-1 min-w-0 flex flex-col justify-center">
-            <h4 class="font-body-md text-body-md text-on-surface font-semibold truncate leading-tight group-hover:text-primary transition-colors" title="${escapeHTML(title)}">${escapeHTML(title)}</h4>
-            <p class="font-label-sm text-label-sm text-on-surface-variant mt-xs">${bookmarks.length} bookmark${bookmarks.length > 1 ? 's' : ''}</p>
+          <!-- Action buttons area -->
+          <div class="flex items-center gap-1 text-on-surface-variant shrink-0">
+            <button aria-label="Open Link" class="open-btn hover:text-primary transition-colors flex items-center justify-center p-1 rounded-full">
+              <span class="material-symbols-outlined text-[18px]">open_in_new</span>
+            </button>
+            <button aria-label="Delete Video Bookmarks" class="delete-history-btn hover:text-error transition-colors flex items-center justify-center p-1 rounded-full">
+              <span class="material-symbols-outlined text-[18px]">delete</span>
+            </button>
           </div>
-          <span class="material-symbols-outlined text-on-surface-variant group-hover:text-primary transition-colors text-[18px]">open_in_new</span>
         `;
 
-        item.addEventListener("click", () => {
+        item.querySelector(".link-area").addEventListener("click", () => {
           chrome.tabs.create({ url: videoUrl });
+        });
+        
+        item.querySelector(".open-btn").addEventListener("click", (e) => {
+          e.stopPropagation();
+          chrome.tabs.create({ url: videoUrl });
+        });
+        
+        item.querySelector(".delete-history-btn").addEventListener("click", (e) => {
+          e.stopPropagation();
+          if (confirm(`Delete all bookmarks for: ${title}?`)) {
+            chrome.storage.local.remove(key, () => {
+              loadHistory();
+              // Also update timeline checkpoints of the active tab if it matches
+              chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
+                const activeTab = tabs[0];
+                if (activeTab && getNormalizedUrl(activeTab.url) === videoUrl) {
+                  initPopup();
+                }
+              });
+            });
+          }
         });
 
         listWrapper.appendChild(item);
