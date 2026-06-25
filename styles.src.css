@@ -1,0 +1,64 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+html {
+    background-color: transparent;
+    border-radius: 12px;
+}
+
+body {
+    font-family: 'Inter', sans-serif;
+    background-color: #131313;
+    margin: 0;
+    padding: 0;
+    width: 360px;
+    height: 540px;
+    border-radius: 12px;
+    overflow: hidden;
+}
+
+/* Simulating Chrome Extension Popup bounds or container */
+.extension-container {
+    width: 360px;
+    height: 540px;
+    position: relative;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    border-radius: 12px;
+    overflow: hidden;
+}
+
+/* Slim scrollbar for lists */
+.custom-scrollbar::-webkit-scrollbar {
+    width: 4px;
+}
+.custom-scrollbar::-webkit-scrollbar-track {
+    background: transparent;
+}
+.custom-scrollbar::-webkit-scrollbar-thumb {
+    background: #353534; /* surface-variant */
+    border-radius: 4px;
+}
+
+/* Hover states for video card per guidelines */
+.video-card:hover .video-border {
+    border-color: rgba(255, 255, 255, 0.4) !important;
+}
+.video-card:hover .play-overlay {
+    opacity: 1 !important;
+}
+
+/* Ambient Glow Effect */
+.ambient-glow {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 250px;
+    height: 250px;
+    background: radial-gradient(circle, rgba(0, 209, 255, 0.05) 0%, rgba(18, 18, 18, 0) 70%);
+    border-radius: 50%;
+    pointer-events: none;
+    z-index: 0;
+}

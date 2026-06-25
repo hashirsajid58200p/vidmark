@@ -1,0 +1,13 @@
+{
+  "name": "vidmark-extension",
+  "version": "1.0.0",
+  "description": "Universal Video Bookmarker Chrome Extension",
+  "main": "background.js",
+  "scripts": {
+    "build:css": "tailwindcss -i ./styles.src.css -o ./styles.css"
+  },
+  "devDependencies": {
+    "tailwindcss": "^3.4.1",
+    "@tailwindcss/forms": "^0.5.7"
+  }
+}

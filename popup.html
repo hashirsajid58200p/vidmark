@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html class="dark" lang="en">
+<head>
+  <meta charset="utf-8"/>
+  <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+  <title>VidMark</title>
+  <!-- Material Symbols for Icons -->
+  <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
+  <!-- Inter Font -->
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@100..900&display=swap" rel="stylesheet"/>
+  <!-- Compiled Stylesheet (contains Tailwind + custom design rules) -->
+  <link href="styles.css" rel="stylesheet"/>
+</head>
+<body class="bg-background text-on-background font-body-md text-body-md w-[360px] h-[540px] relative flex flex-col overflow-hidden antialiased selection:bg-primary-container selection:text-on-primary-container">
+
+  <!-- ================================================================= -->
+  <!-- 1. ACTIVE STATE CONTAINER                                         -->
+  <!-- Shown when a video is found on the active page                    -->
+  <!-- ================================================================= -->
+  <div id="active-state" class="w-full h-full flex flex-col" style="display: none;">
+    <!-- TopNavBar (Integrated from active.html) -->
+    <header class="bg-surface dark:bg-surface text-primary dark:text-primary flex justify-between items-center px-md py-sm w-full border-b border-white/10 bg-surface/80 backdrop-blur-md z-10 shrink-0">
+      <div class="font-headline-md text-headline-md-mobile font-bold text-primary dark:text-primary flex items-center gap-2">
+        <span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">play_circle</span>
+        VidMark
+      </div>
+      <div class="flex items-center gap-gutter text-on-surface-variant">
+        <button id="active-settings-btn" class="hover:bg-surface-container-highest transition-colors duration-200 p-1 rounded-full active:scale-95 transition-transform flex items-center justify-center" aria-label="Settings">
+          <span class="material-symbols-outlined text-[20px]">settings</span>
+        </button>
+        <button id="active-help-btn" class="hover:bg-surface-container-highest transition-colors duration-200 p-1 rounded-full active:scale-95 transition-transform flex items-center justify-center" aria-label="Help">
+          <span class="material-symbols-outlined text-[20px]">help</span>
+        </button>
+      </div>
+    </header>
+
+    <!-- Main Content Canvas -->
+    <main class="flex-1 overflow-y-auto custom-scrollbar pb-[72px] flex flex-col relative">
+      
+      <!-- Bookmarks View -->
+      <div id="active-bookmarks-view" class="w-full flex flex-col flex-1">
+        <!-- Video Info Card -->
+        <div class="m-md bg-surface-container p-gutter rounded-[16px] border border-white/10 video-border transition-colors duration-500 video-card flex gap-gutter items-center shrink-0">
+          <div class="relative w-20 h-14 bg-surface-variant rounded-lg overflow-hidden shrink-0">
+            <img id="video-thumbnail" class="w-full h-full object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBBfuEPehP9xipVuTn9btmWUX1Cq6c0TVyTFpOyDfOvQj0pMyh4oh6rswekCXqIy-_x9Rj7sTNfq3FmyiKdP8ThvIhFf2FS1LepVwN7lPFd04gyrtaWwhBTR6x-n46qalBeEkLcpM7tdpcUv81uap5sIh2Z21iQ3bZgzBy4tS7mCUPXdF0X2aniH9Y9GDwmbGm4tW6z-f3ZkfUSGdjF6i0T6nyInk8hMrmNfVge331zGi6hTopOmZjH3cP_4t3K3_rKyPoV_TQLr2F4" alt="Video Thumbnail"/>
+            <div class="play-overlay absolute inset-0 bg-black/50 flex items-center justify-center opacity-0 transition-opacity duration-300">
+              <span class="material-symbols-outlined text-white" style="font-variation-settings: 'FILL' 1;">play_arrow</span>
+            </div>
+          </div>
+          <div class="flex-1 min-w-0">
+            <h2 id="video-title" class="font-body-md text-body-md text-on-surface font-semibold truncate w-full">Advanced Python Tutorial</h2>
+            <p id="video-time" class="font-label-sm text-label-sm text-on-surface-variant mt-xs">00:00</p>
+          </div>
+        </div>
+
+        <!-- Primary Action Button -->
+        <div class="px-md pb-md shrink-0">
+          <button id="save-timestamp" class="w-full bg-primary-container text-on-primary-container font-body-md text-body-md font-semibold rounded-lg py-[10px] px-md flex items-center justify-center gap-2 shadow-[0_4px_20px_rgba(0,209,255,0.3)] hover:bg-primary transition-colors active:scale-[0.98]">
+            <span class="material-symbols-outlined text-[20px]">add</span>
+            Save Current Timestamp
+          </button>
+        </div>
+
+        <!-- Bookmark List -->
+        <div id="bookmarks-list" class="flex-1 flex flex-col px-md gap-xs">
+          <!-- Injected dynamically -->
+        </div>
+      </div>
+
+      <!-- Tags View -->
+      <div id="active-tags-view" class="flex-1 flex flex-col items-center justify-center p-md text-center min-h-[300px]" style="display: none;">
+        <span class="material-symbols-outlined text-[40px] text-primary mb-sm">sell</span>
+        <h3 class="font-headline-md text-on-surface mb-xs">Tags</h3>
+        <p class="font-body-md text-on-surface-variant max-w-[240px] leading-relaxed">Organize and search your video checkpoints. Coming soon!</p>
+      </div>
+
+      <!-- History View -->
+      <div id="active-history-view" class="flex-1 flex flex-col items-center justify-center p-md text-center min-h-[300px]" style="display: none;">
+        <span class="material-symbols-outlined text-[40px] text-primary mb-sm">history</span>
+        <h3 class="font-headline-md text-on-surface mb-xs">History</h3>
+        <p class="font-body-md text-on-surface-variant max-w-[240px] leading-relaxed">Browse your recently annotated video logs. Coming soon!</p>
+      </div>
+
+      <!-- Settings View -->
+      <div id="active-settings-view" class="flex-1 flex flex-col items-center justify-center p-md text-center min-h-[300px]" style="display: none;">
+        <span class="material-symbols-outlined text-[40px] text-primary mb-sm">settings</span>
+        <h3 class="font-headline-md text-on-surface mb-xs">Settings</h3>
+        <p class="font-body-md text-on-surface-variant max-w-[240px] leading-relaxed">Configure default note templates and storage formats. Coming soon!</p>
+      </div>
+
+      <!-- Help View -->
+      <div id="active-help-view" class="flex-1 flex flex-col items-center justify-center p-md text-center min-h-[300px]" style="display: none;">
+        <span class="material-symbols-outlined text-[40px] text-primary mb-sm">help</span>
+        <h3 class="font-headline-md text-on-surface mb-xs">Help & Support</h3>
+        <p class="font-body-md text-on-surface-variant max-w-[240px] leading-relaxed">Learn keyboard shortcuts and get support queries. Coming soon!</p>
+      </div>
+
+    </main>
+
+    <!-- BottomNavBar (Integrated from active.html) -->
+    <nav class="absolute bottom-0 w-full z-10 flex justify-around items-center py-xs px-md bg-surface-container/90 backdrop-blur-lg border-t border-white/5 shadow-md">
+      <button id="active-bookmarks-tab" class="flex flex-col items-center justify-center text-primary font-bold active:scale-90 hover:text-primary-fixed-dim transition-all w-[64px] h-[48px] gap-1">
+        <span class="material-symbols-outlined text-[24px]" style="font-variation-settings: 'FILL' 1;">bookmark</span>
+        <span class="font-label-sm text-label-sm">Bookmarks</span>
+      </button>
+      <button id="active-tags-tab" class="flex flex-col items-center justify-center text-on-surface-variant active:scale-90 hover:text-primary-fixed-dim transition-all w-[64px] h-[48px] gap-1">
+        <span class="material-symbols-outlined text-[24px]">sell</span>
+        <span class="font-label-sm text-label-sm">Tags</span>
+      </button>
+      <button id="active-history-tab" class="flex flex-col items-center justify-center text-on-surface-variant active:scale-90 hover:text-primary-fixed-dim transition-all w-[64px] h-[48px] gap-1">
+        <span class="material-symbols-outlined text-[24px]">history</span>
+        <span class="font-label-sm text-label-sm">History</span>
+      </button>
+    </nav>
+  </div>
+
+  <!-- ================================================================= -->
+  <!-- 2. EMPTY STATE CONTAINER                                          -->
+  <!-- Shown when no active tab video is detected                       -->
+  <!-- ================================================================= -->
+  <div id="empty-state" class="w-full h-full flex flex-col" style="display: none;">
+    <!-- TopNavBar (Integrated from empty.html) -->
+    <header class="bg-surface dark:bg-surface w-full border-b border-white/10 bg-surface/80 backdrop-blur-md flex justify-between items-center px-md py-sm shrink-0">
+      <div class="font-headline-md text-headline-md-mobile font-bold text-primary dark:text-primary flex items-center gap-2">
+        VidMark
+      </div>
+      <div class="flex items-center gap-sm">
+        <button id="empty-settings-btn" class="text-on-surface-variant hover:bg-surface-container-highest transition-colors duration-200 active:scale-95 transition-transform p-xs rounded-full flex items-center justify-center" aria-label="Settings">
+          <span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 0;">settings</span>
+        </button>
+        <button id="empty-help-btn" class="text-on-surface-variant hover:bg-surface-container-highest transition-colors duration-200 active:scale-95 transition-transform p-xs rounded-full flex items-center justify-center" aria-label="Help">
+          <span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 0;">help</span>
+        </button>
+      </div>
+    </header>
+
+    <!-- Main Content Canvas (Empty State) -->
+    <main class="flex-1 flex flex-col p-md relative overflow-y-auto custom-scrollbar pb-[72px]">
+      <div class="ambient-glow"></div>
+      
+      <!-- Bookmarks View -->
+      <div id="empty-bookmarks-view" class="w-full flex flex-col flex-1 items-center justify-center">
+        <!-- Illustration -->
+        <div class="w-48 h-48 mb-lg relative flex items-center justify-center z-10">
+          <img class="object-contain w-full h-full opacity-90 drop-shadow-[0_4px_20px_rgba(0,209,255,0.1)]" src="https://lh3.googleusercontent.com/aida-public/AB6AXuA1-XYlUf8qsrVoRv7NyJDLpPLNbHEE6S7CK8Ckc3oPEp8Zz6apQsbnIIkuzk_nwzXOuyG20FeWcUxM56JzR2KsW5nNBQPcAkf6skIsTLDH8y8EzVe0J8a98Qu-WRYr3dlnf5VVmvLnaa11l47RnW_rv7UT-tBxrMvvwef2tQkRy9hHSpE9Vn3f-uJIp2NimUw54xnGw6FtzVR4pj-Ls1Uxcb2Fa8vjNPteMXmOTGb1TWPL5xS9hQ7A-h0htSZI1aXtPn7BRskJYqEH" alt="Rocket Illustration"/>
+        </div>
+        
+        <!-- Typography Content -->
+        <div class="flex flex-col items-center text-center z-10 mb-xl max-w-[280px]">
+          <h1 class="font-headline-lg-mobile text-headline-lg-mobile text-on-surface mb-sm tracking-tight">Ready to Mark?</h1>
+          <p class="font-body-md text-body-md text-on-surface-variant leading-relaxed">Play a video to start bookmarking!</p>
+        </div>
+        
+        <!-- Action Button (Disabled) -->
+        <button class="z-10 bg-surface-variant text-on-surface-variant px-lg py-sm rounded-lg font-label-sm text-label-sm flex items-center gap-sm opacity-50 cursor-not-allowed border border-white/5 w-full justify-center max-w-[280px]" disabled>
+          <span class="material-symbols-outlined text-[18px]">add</span>
+          Add Current Timestamp
+        </button>
+      </div>
+
+      <!-- Tags View -->
+      <div id="empty-tags-view" class="w-full flex-1 flex flex-col items-center justify-center text-center relative z-10" style="display: none;">
+        <span class="material-symbols-outlined text-[40px] text-primary mb-sm">sell</span>
+        <h3 class="font-headline-md text-on-surface mb-xs">Tags</h3>
+        <p class="font-body-md text-on-surface-variant max-w-[240px] leading-relaxed">Organize and search your video checkpoints. Coming soon!</p>
+      </div>
+
+      <!-- History View -->
+      <div id="empty-history-view" class="w-full flex-1 flex flex-col items-center justify-center text-center relative z-10" style="display: none;">
+        <span class="material-symbols-outlined text-[40px] text-primary mb-sm">history</span>
+        <h3 class="font-headline-md text-on-surface mb-xs">History</h3>
+        <p class="font-body-md text-on-surface-variant max-w-[240px] leading-relaxed">Browse your recently annotated video logs. Coming soon!</p>
+      </div>
+
+      <!-- Settings View -->
+      <div id="empty-settings-view" class="w-full flex-1 flex flex-col items-center justify-center text-center relative z-10" style="display: none;">
+        <span class="material-symbols-outlined text-[40px] text-primary mb-sm">settings</span>
+        <h3 class="font-headline-md text-on-surface mb-xs">Settings</h3>
+        <p class="font-body-md text-on-surface-variant max-w-[240px] leading-relaxed">Configure default note templates and storage formats. Coming soon!</p>
+      </div>
+
+      <!-- Help View -->
+      <div id="empty-help-view" class="w-full flex-1 flex flex-col items-center justify-center text-center relative z-10" style="display: none;">
+        <span class="material-symbols-outlined text-[40px] text-primary mb-sm">help</span>
+        <h3 class="font-headline-md text-on-surface mb-xs">Help & Support</h3>
+        <p class="font-body-md text-on-surface-variant max-w-[240px] leading-relaxed">Learn keyboard shortcuts and get support queries. Coming soon!</p>
+      </div>
+
+    </main>
+
+    <!-- BottomNavBar (Integrated from empty.html) -->
+    <nav class="bg-surface-container/90 backdrop-blur-lg border-t border-white/5 shadow-md flex justify-around items-center py-xs px-md w-full shrink-0">
+      <button id="empty-bookmarks-tab" class="flex flex-col items-center justify-center text-primary font-bold active:scale-90 w-16 group">
+        <div class="p-xs rounded-full mb-xs group-hover:bg-primary/10 transition-colors">
+          <span class="material-symbols-outlined text-[24px]" style="font-variation-settings: 'FILL' 1;">bookmark</span>
+        </div>
+        <span class="font-label-sm text-label-sm">Bookmarks</span>
+      </button>
+      <button id="empty-tags-tab" class="flex flex-col items-center justify-center text-on-surface-variant hover:text-primary-fixed-dim transition-all active:scale-90 w-16 group">
+        <div class="p-xs rounded-full mb-xs group-hover:bg-surface-variant transition-colors">
+          <span class="material-symbols-outlined text-[24px]" style="font-variation-settings: 'FILL' 0;">sell</span>
+        </div>
+        <span class="font-label-sm text-label-sm">Tags</span>
+      </button>
+      <button id="empty-history-tab" class="flex flex-col items-center justify-center text-on-surface-variant hover:text-primary-fixed-dim transition-all active:scale-90 w-16 group">
+        <div class="p-xs rounded-full mb-xs group-hover:bg-surface-variant transition-colors">
+          <span class="material-symbols-outlined text-[24px]" style="font-variation-settings: 'FILL' 0;">history</span>
+        </div>
+        <span class="font-label-sm text-label-sm">History</span>
+      </button>
+    </nav>
+    <div class="h-[72px] w-full shrink-0"></div>
+  </div>
+
+  <!-- ================================================================= -->
+  <!-- 3. DIALOG MODAL (Glassmorphic editor overlay for bookmark notes)  -->
+  <!-- ================================================================= -->
+  <div id="bookmark-modal" class="absolute inset-0 bg-surface-container/60 backdrop-blur-md flex items-center justify-center z-50 transition-opacity duration-200" style="display: none; opacity: 0;">
+    <div class="bg-surface-container-high border border-white/10 rounded-xl p-md w-[280px] flex flex-col gap-md shadow-2xl relative">
+      <h3 id="modal-title" class="font-headline-md text-on-surface font-semibold">Add Bookmark</h3>
+      <div class="flex flex-col gap-xs">
+        <label for="bookmark-note-input" class="font-label-sm text-label-sm text-on-surface-variant">Description</label>
+        <input id="bookmark-note-input" type="text" class="bg-surface-container-low border-b-2 border-white/10 focus:border-primary text-on-surface rounded-lg px-sm py-[8px] w-full outline-none transition-colors" placeholder="e.g., Critical concept..." autocomplete="off"/>
+      </div>
+      <div class="flex gap-sm justify-end">
+        <button id="modal-cancel" class="text-on-surface-variant hover:text-on-surface font-body-md py-xs px-sm rounded hover:bg-white/5 transition-colors">Cancel</button>
+        <button id="modal-save" class="bg-primary-container text-on-primary-container font-body-md font-semibold py-xs px-md rounded-lg shadow-md hover:bg-primary transition-colors">Save</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="popup.js"></script>
+</body>
+</html>
