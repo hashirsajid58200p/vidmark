@@ -1,8 +1,14 @@
 (function() {
   if (window.vidMarkLoaded) {
-    chrome.runtime.sendMessage({ action: "REGISTER_VIDEO_FRAME" }, () => {
-      if (chrome.runtime.lastError) { /* ignore runtime disconnect */ }
-    });
+    try {
+      if (chrome.runtime && chrome.runtime.sendMessage) {
+        chrome.runtime.sendMessage({ action: "REGISTER_VIDEO_FRAME" }, () => {
+          if (chrome.runtime.lastError) { /* ignore runtime disconnect */ }
+        });
+      }
+    } catch (e) {
+      // Ignore context invalidation errors
+    }
     if (typeof window.initTimelineCheckpoints === 'function') {
       window.initTimelineCheckpoints();
     }
@@ -116,9 +122,15 @@
 
   // Register frame details with service worker background page
   function registerVideoFrame() {
-    chrome.runtime.sendMessage({ action: "REGISTER_VIDEO_FRAME" }, () => {
-      if (chrome.runtime.lastError) { /* ignore runtime disconnect */ }
-    });
+    try {
+      if (chrome.runtime && chrome.runtime.sendMessage) {
+        chrome.runtime.sendMessage({ action: "REGISTER_VIDEO_FRAME" }, () => {
+          if (chrome.runtime.lastError) { /* ignore runtime disconnect */ }
+        });
+      }
+    } catch (e) {
+      // Ignore context invalidation errors
+    }
   }
 
   // Search for common player progress bar elements (in both specific and generic containers, ignoring hidden state checks for initial matching)
