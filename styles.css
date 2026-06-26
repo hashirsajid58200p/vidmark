@@ -1385,6 +1385,10 @@ input:where([type='file']):focus {
   padding-right: 4px;
 }
 
+.pt-\[40px\] {
+  padding-top: 40px;
+}
+
 .text-left {
   text-align: left;
 }
