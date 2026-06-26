@@ -344,7 +344,13 @@
         name.includes('time') ||
         name.includes('volume') ||
         name.includes('mute') ||
-        name.includes('sound')
+        name.includes('sound') ||
+        name.includes('played') ||
+        name.includes('elapsed') ||
+        name.includes('current') ||
+        name.includes('fill') ||
+        name.includes('value') ||
+        name.includes('active')
       ) {
         return false;
       }
