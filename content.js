@@ -207,6 +207,14 @@
   // Check if a video element is likely the main content video on the page
   function isMainVideo(video) {
     if (!video) return false;
+
+    // YouTube page URL check: only watch/shorts URLs are allowed to host main videos
+    if (window.location.hostname.includes("youtube.com")) {
+      const path = window.location.pathname;
+      if (!path.startsWith('/watch') && !path.startsWith('/shorts')) {
+        return false;
+      }
+    }
     
     const width = video.offsetWidth || video.videoWidth || 0;
     const height = video.offsetHeight || video.videoHeight || 0;
@@ -682,16 +690,14 @@
 
     if (request.action === "GET_VIDEO_STATE") {
       const video = findVideo();
-      if (!video) {
+      if (!video || !isMainVideo(video)) {
         sendResponse({ found: false });
         return true; 
       }
 
       // Force video detection & registration sync immediately on query to solve delays
-      if (isMainVideo(video)) {
-        registerVideoFrame();
-        initTimelineCheckpoints();
-      }
+      registerVideoFrame();
+      initTimelineCheckpoints();
 
       const url = getNormalizedUrl(window.location.href);
       const ytId = getYoutubeVideoId(url);
@@ -754,7 +760,7 @@
 
     else if (request.action === "QUICK_MARK") {
       const video = findVideo();
-      if (video) {
+      if (video && isMainVideo(video)) {
         const time = video.currentTime;
         const url = getNormalizedUrl(window.location.href);
         const storageKey = `vidmark_bm_${url}`;
