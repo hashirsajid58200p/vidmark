@@ -418,6 +418,12 @@
         const progressContainer = getOrCreateUniversalTimeline(video);
         if (!progressContainer) return;
 
+        // Retrieve container padding styles to calculate exact progress track start/end bounds
+        const containerStyle = window.getComputedStyle(progressContainer);
+        const paddingLeft = parseFloat(containerStyle.paddingLeft) || 0;
+        const paddingRight = parseFloat(containerStyle.paddingRight) || 0;
+        const totalPadding = paddingLeft + paddingRight;
+
         bookmarks.forEach(bm => {
           const pct = (bm.time / video.duration) * 100;
           if (isNaN(pct) || pct < 0 || pct > 100) return;
@@ -425,8 +431,13 @@
           const dot = document.createElement('div');
           dot.className = 'vidmark-checkpoint';
           
+          // Math calculation using CSS calc() to offset parent container paddings dynamically
+          const leftValue = totalPadding > 0 
+            ? `calc(${paddingLeft}px + ${pct / 100} * (100% - ${totalPadding}px))`
+            : `${pct}%`;
+
           dot.style.setProperty('position', 'absolute', 'important');
-          dot.style.setProperty('left', `${pct}%`, 'important');
+          dot.style.setProperty('left', leftValue, 'important');
           dot.style.setProperty('top', '50%', 'important');
           dot.style.setProperty('width', '8px', 'important');
           dot.style.setProperty('height', '8px', 'important');

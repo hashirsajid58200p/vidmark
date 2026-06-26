@@ -931,6 +931,10 @@ input:where([type='file']):focus {
   height: 540px;
 }
 
+.h-\[60px\] {
+  height: 60px;
+}
+
 .h-full {
   height: 100%;
 }
@@ -1045,6 +1049,10 @@ input:where([type='file']):focus {
   -webkit-user-select: none;
      -moz-user-select: none;
           user-select: none;
+}
+
+.resize-none {
+  resize: none;
 }
 
 .list-disc {
@@ -1869,6 +1877,11 @@ img {
 .hover\:text-primary-fixed-dim:hover {
   --tw-text-opacity: 1;
   color: rgb(var(--color-primary-fixed-dim-rgb, 76 214 255) / var(--tw-text-opacity, 1));
+}
+
+.focus\:border-primary:focus {
+  --tw-border-opacity: 1;
+  border-color: rgb(var(--color-primary-rgb, 164 230 255) / var(--tw-border-opacity, 1));
 }
 
 .focus\:outline-none:focus {

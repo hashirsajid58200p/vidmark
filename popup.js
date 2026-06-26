@@ -5,6 +5,7 @@ document.addEventListener("DOMContentLoaded", () => {
   initPopup();
   wireTabListeners();
   wireSettingsListeners();
+  wireHelpListeners();
   initStorageListener();
 });
 
@@ -828,6 +829,41 @@ function updatePlayOverlayIcon(paused) {
   if (icon) {
     icon.textContent = paused ? "play_arrow" : "pause";
   }
+}
+
+function wireHelpListeners() {
+  // Star on GitHub
+  document.querySelectorAll(".github-star-btn").forEach(btn => {
+    btn.addEventListener("click", () => {
+      chrome.tabs.create({ url: "https://github.com/hashirsajid58200p/vidmark" });
+    });
+  });
+
+  // Submit Feedback
+  document.querySelectorAll(".submit-feedback-btn").forEach(btn => {
+    btn.addEventListener("click", (e) => {
+      const container = e.currentTarget.closest(".flex-col");
+      const textarea = container.querySelector(".feedback-input");
+      const feedbackText = textarea ? textarea.value.trim() : "";
+
+      if (!feedbackText) {
+        showAlert("Empty Feedback", "Please enter your suggestions or feedback before submitting.");
+        return;
+      }
+
+      chrome.storage.local.get(["user_feedbacks"], (result) => {
+        const feedbacks = result.user_feedbacks || [];
+        feedbacks.push({
+          text: feedbackText,
+          timestamp: Date.now()
+        });
+        chrome.storage.local.set({ user_feedbacks: feedbacks }, () => {
+          if (textarea) textarea.value = "";
+          showAlert("Thank You!", "Your feedback has been submitted successfully. Thank you for helping to improve VidMark!");
+        });
+      });
+    });
+  });
 }
 
 
