@@ -2,7 +2,9 @@
   if (window.vidMarkLoaded) {
     try {
       if (chrome.runtime && chrome.runtime.sendMessage) {
-        chrome.runtime.sendMessage({ action: "REGISTER_VIDEO_FRAME" }, () => {
+        const video = findVideo();
+        const score = video ? calculateVideoScore(video) : 0;
+        chrome.runtime.sendMessage({ action: "REGISTER_VIDEO_FRAME", score }, () => {
           if (chrome.runtime.lastError) { /* ignore runtime disconnect */ }
         });
       }
@@ -15,6 +17,16 @@
     return;
   }
   window.vidMarkLoaded = true;
+
+  if (window.top === window) {
+    try {
+      if (chrome.runtime && chrome.runtime.sendMessage) {
+        chrome.runtime.sendMessage({ action: "RESET_VIDEO_FRAME" }, () => {
+          if (chrome.runtime.lastError) { /* ignore runtime disconnect */ }
+        });
+      }
+    } catch (e) {}
+  }
 
   // Helper to format seconds into HH:MM:SS or MM:SS
   function formatTime(secs) {
@@ -80,48 +92,95 @@
     return title;
   }
 
+  // Safely find all videos including inside shadow roots
+  function getAllVideos() {
+    const videos = [];
+    const queue = [document];
+    const seen = new Set();
+
+    while (queue.length > 0 && seen.size < 50) {
+      const node = queue.shift();
+      if (!node || seen.has(node)) continue;
+      seen.add(node);
+
+      try {
+        const found = node.querySelectorAll('video');
+        for (const v of found) {
+          videos.push(v);
+        }
+      } catch (e) {}
+
+      try {
+        const all = node.querySelectorAll('*');
+        for (const el of all) {
+          if (el.shadowRoot && !seen.has(el.shadowRoot)) {
+            queue.push(el.shadowRoot);
+          }
+        }
+      } catch (e) {}
+    }
+
+    return Array.from(new Set(videos));
+  }
+
+  // Calculate video suitability score
+  function calculateVideoScore(v) {
+    if (!v) return 0;
+    const isPlaying = !v.paused && !v.ended;
+    const width = v.offsetWidth || v.videoWidth || 0;
+    const height = v.offsetHeight || v.videoHeight || 0;
+    const size = width * height;
+    const duration = (v.duration && !isNaN(v.duration)) ? v.duration : 0;
+    const currentTime = (v.currentTime && !isNaN(v.currentTime)) ? v.currentTime : 0;
+    
+    let score = 0;
+    
+    // If the video is extremely small (like tracking pixels or hidden elements), penalize it heavily
+    if (width < 10 || height < 10) {
+      score -= 10000000;
+    }
+    
+    // Duration is the primary indicator of content vs ads/loops
+    if (duration > 45) {
+      score += 2000000; // Big bonus for real content
+    }
+    
+    score += duration * 100; // Longer videos get higher score
+    
+    if (isPlaying) {
+      score += 500000; // Bonus if currently playing
+    }
+    
+    score += size; // Larger layout gets higher score
+    
+    if (currentTime > 0) {
+      score += 50000; // Bonus if user has interacted/played it
+    }
+    
+    return score;
+  }
+
+  let cachedVideo = null;
+
   // Function to find the most appropriate video element on the page using a robust scoring system
   function findVideo() {
-    const videos = Array.from(document.querySelectorAll('video'));
-    if (videos.length === 0) return null;
+    if (cachedVideo && cachedVideo.isConnected) {
+      return cachedVideo;
+    }
+
+    const videos = getAllVideos();
+    if (videos.length === 0) {
+      cachedVideo = null;
+      return null;
+    }
 
     const scoredVideos = videos.map(v => {
-      const isPlaying = !v.paused && !v.ended;
-      const width = v.offsetWidth || v.videoWidth || 0;
-      const height = v.offsetHeight || v.videoHeight || 0;
-      const size = width * height;
-      const duration = (v.duration && !isNaN(v.duration)) ? v.duration : 0;
-      const currentTime = (v.currentTime && !isNaN(v.currentTime)) ? v.currentTime : 0;
-      
-      let score = 0;
-      
-      // If the video is extremely small (like tracking pixels or hidden elements), penalize it heavily
-      if (width < 10 || height < 10) {
-        score -= 10000000;
-      }
-      
-      // Duration is the primary indicator of content vs ads/loops
-      if (duration > 45) {
-        score += 2000000; // Big bonus for real content
-      }
-      
-      score += duration * 100; // Longer videos get higher score
-      
-      if (isPlaying) {
-        score += 500000; // Bonus if currently playing
-      }
-      
-      score += size; // Larger layout gets higher score
-      
-      if (currentTime > 0) {
-        score += 50000; // Bonus if user has interacted/played it
-      }
-      
-      return { video: v, score };
+      return { video: v, score: calculateVideoScore(v) };
     });
 
     scoredVideos.sort((a, b) => b.score - a.score);
-    return scoredVideos[0].video;
+    cachedVideo = scoredVideos[0].video;
+    return cachedVideo;
   }
 
   // Check if a video element is likely the main content video on the page
@@ -166,7 +225,9 @@
   function registerVideoFrame() {
     try {
       if (chrome.runtime && chrome.runtime.sendMessage) {
-        chrome.runtime.sendMessage({ action: "REGISTER_VIDEO_FRAME" }, () => {
+        const video = findVideo();
+        const score = video ? calculateVideoScore(video) : 0;
+        chrome.runtime.sendMessage({ action: "REGISTER_VIDEO_FRAME", score }, () => {
           if (chrome.runtime.lastError) { /* ignore runtime disconnect */ }
         });
       }
@@ -175,39 +236,54 @@
     }
   }
 
-  // Query all elements matching a selector, traversing shadow DOMs recursively
-  function queryAllIncludingShadows(selector, root = document) {
+  // Helper to query all elements matching a selector, including traversing shadow roots of video ancestors
+  function findAllElementsInPlayer(selector, video) {
     const results = [];
     
-    function traverse(node) {
-      if (!node) return;
-      
-      if (node.querySelectorAll) {
-        try {
-          const matched = node.querySelectorAll(selector);
-          for (const m of matched) {
-            results.push(m);
+    // 1. Search in the light DOM of the document
+    try {
+      const docMatches = document.querySelectorAll(selector);
+      for (const m of docMatches) {
+        results.push(m);
+      }
+    } catch (e) {}
+    
+    // 2. Search in shadow roots of the video element's ancestors
+    if (video) {
+      let current = video.parentNode || video.host;
+      while (current) {
+        if (current instanceof ShadowRoot || current.host !== undefined) {
+          const rootToQuery = current instanceof ShadowRoot ? current : current.shadowRoot;
+          if (rootToQuery) {
+            try {
+              const shadowMatches = rootToQuery.querySelectorAll(selector);
+              for (const m of shadowMatches) {
+                results.push(m);
+              }
+            } catch (e) {}
           }
-        } catch (e) {}
-      }
-      
-      if (node.shadowRoot) {
-        traverse(node.shadowRoot);
-      }
-      
-      let child = node.firstElementChild;
-      while (child) {
-        traverse(child);
-        child = child.nextElementSibling;
+        }
+        // Walk up to next parent or host
+        if (current.parentNode) {
+          current = current.parentNode;
+        } else if (current.host) {
+          current = current.host;
+        } else {
+          current = null;
+        }
       }
     }
     
-    traverse(root);
-    return results;
+    return Array.from(new Set(results));
+  }
+
+  function findElementInPlayer(selector, video) {
+    const matches = findAllElementsInPlayer(selector, video);
+    return matches.length > 0 ? matches[0] : null;
   }
 
   // Search for common player progress bar elements (in both specific and generic containers, ignoring hidden state checks for initial matching)
-  function findNativeTimeline() {
+  function findNativeTimeline(video) {
     const specificSelectors = [
       '.ytp-progress-list',             // YouTube
       '.vjs-progress-holder',           // Video.js
@@ -223,8 +299,8 @@
     ];
 
     for (const selector of specificSelectors) {
-      const elements = queryAllIncludingShadows(selector);
-      if (elements.length > 0) return elements[0];
+      const el = findElementInPlayer(selector, video);
+      if (el) return el;
     }
 
     const genericSelectors = [
@@ -247,7 +323,7 @@
     let candidates = [];
     for (const selector of genericSelectors) {
       try {
-        const elements = queryAllIncludingShadows(selector);
+        const elements = findAllElementsInPlayer(selector, video);
         candidates.push(...elements);
       } catch (e) {
         // ignore selector errors
@@ -344,12 +420,17 @@
 
   // Get native progress bar OR create a custom invisible timeline container
   function getOrCreateUniversalTimeline(video) {
-    let nativeTimeline = findNativeTimeline();
+    let nativeTimeline = findNativeTimeline(video);
     if (nativeTimeline) {
       // If the matched progress bar is an INPUT tag (e.g. Plyr <input type="range">),
       // we must use its parent container because inputs cannot have child elements in HTML.
       if (nativeTimeline.tagName === 'INPUT') {
-        nativeTimeline = nativeTimeline.parentElement;
+        const parent = nativeTimeline.parentElement;
+        if (parent && window.getComputedStyle(parent).position === 'static') {
+          parent.style.position = 'relative';
+        }
+        clearUniversalTimeline();
+        return parent;
       }
       // Enforce relative/absolute position so checkpoints align precisely
       if (window.getComputedStyle(nativeTimeline).position === 'static') {
@@ -415,8 +496,24 @@
           return;
         }
 
+        const nativeTimeline = findNativeTimeline(video);
         const progressContainer = getOrCreateUniversalTimeline(video);
         if (!progressContainer) return;
+
+        let leftPercent = 0;
+        let widthPercent = 100;
+        let isRangeInput = false;
+
+        if (nativeTimeline && nativeTimeline.tagName === 'INPUT') {
+          isRangeInput = true;
+          const containerRect = progressContainer.getBoundingClientRect();
+          const timelineRect = nativeTimeline.getBoundingClientRect();
+          if (containerRect.width > 0) {
+            const leftOffset = timelineRect.left - containerRect.left;
+            leftPercent = (leftOffset / containerRect.width) * 100;
+            widthPercent = (timelineRect.width / containerRect.width) * 100;
+          }
+        }
 
         // Retrieve container padding styles to calculate exact progress track start/end bounds
         const containerStyle = window.getComputedStyle(progressContainer);
@@ -432,9 +529,14 @@
           dot.className = 'vidmark-checkpoint';
           
           // Math calculation using CSS calc() to offset parent container paddings dynamically
-          const leftValue = totalPadding > 0 
-            ? `calc(${paddingLeft}px + ${pct / 100} * (100% - ${totalPadding}px))`
-            : `${pct}%`;
+          let leftValue;
+          if (isRangeInput) {
+            leftValue = `calc(${leftPercent}% + (${pct / 100} * ${widthPercent}%))`;
+          } else {
+            leftValue = totalPadding > 0 
+              ? `calc(${paddingLeft}px + ${pct / 100} * (100% - ${totalPadding}px))`
+              : `${pct}%`;
+          }
 
           dot.style.setProperty('position', 'absolute', 'important');
           dot.style.setProperty('left', leftValue, 'important');
@@ -463,15 +565,13 @@
   function initTimelineCheckpoints() {
     const video = findVideo();
     if (video) {
-      video.removeEventListener('durationchange', renderTimelineCheckpoints);
-      video.removeEventListener('loadedmetadata', renderTimelineCheckpoints);
-      video.removeEventListener('play', handleVideoStateChange);
-      video.removeEventListener('pause', handleVideoStateChange);
-      
-      video.addEventListener('durationchange', renderTimelineCheckpoints);
-      video.addEventListener('loadedmetadata', renderTimelineCheckpoints);
-      video.addEventListener('play', handleVideoStateChange);
-      video.addEventListener('pause', handleVideoStateChange);
+      if (video.dataset.vidmarkInitialized !== "true") {
+        video.dataset.vidmarkInitialized = "true";
+        video.addEventListener('durationchange', renderTimelineCheckpoints);
+        video.addEventListener('loadedmetadata', renderTimelineCheckpoints);
+        video.addEventListener('play', handleVideoStateChange);
+        video.addEventListener('pause', handleVideoStateChange);
+      }
     }
     renderTimelineCheckpoints();
   }
@@ -591,22 +691,37 @@
     return true; 
   });
 
-  // Initial injection polling loop
+  // Document-level capturing listeners to catch play events on dynamically added video elements immediately
+  document.addEventListener('play', (event) => {
+    if (event.target && event.target.tagName === 'VIDEO') {
+      const video = event.target;
+      if (isMainVideo(video)) {
+        registerVideoFrame();
+        initTimelineCheckpoints();
+      }
+    }
+  }, true);
+
+  document.addEventListener('loadedmetadata', (event) => {
+    if (event.target && event.target.tagName === 'VIDEO') {
+      const video = event.target;
+      if (isMainVideo(video)) {
+        registerVideoFrame();
+        initTimelineCheckpoints();
+      }
+    }
+  }, true);
+
+  // Initial light-weight continuous polling loop as backup for SPAs
   let lastUrl = getNormalizedUrl(window.location.href);
-  let initAttempts = 0;
-
-  const initInterval = setInterval(() => {
-    initAttempts++;
+  
+  setInterval(() => {
     const video = findVideo();
-
     if (video && isMainVideo(video)) {
       registerVideoFrame();
       initTimelineCheckpoints();
-      clearInterval(initInterval);
-    } else if (initAttempts > 20) {
-      clearInterval(initInterval);
     }
-  }, 1000);
+  }, 3000);
 
   // Detect SPA router page navigations via URL check
   setInterval(() => {
@@ -641,4 +756,55 @@
       initTimelineCheckpoints();
     }, 3000); 
   });
+
+  // Direct keydown event listener as failsafe/backup for keyboard shortcuts
+  document.addEventListener('keydown', (e) => {
+    const isMac = navigator.platform.toUpperCase().indexOf('MAC') >= 0;
+    const isModifier = isMac ? e.metaKey : e.ctrlKey;
+    
+    if (isModifier && e.shiftKey && e.key.toUpperCase() === 'K') {
+      const video = findVideo();
+      if (video && isMainVideo(video)) {
+        e.preventDefault();
+        
+        // Trigger quick mark logic directly
+        const time = video.currentTime;
+        const url = getNormalizedUrl(window.location.href);
+        const storageKey = `vidmark_bm_${url}`;
+        
+        chrome.storage.local.get([storageKey], (result) => {
+          const bookmarks = result[storageKey] || [];
+          const existingIndex = bookmarks.findIndex(bm => Math.floor(bm.time) === Math.floor(time));
+          
+          if (existingIndex === -1) {
+            const defaultNote = getCleanTitle();
+            const thumbnail = captureVideoFrame(video);
+            
+            bookmarks.push({ time, note: defaultNote, thumbnail });
+            bookmarks.sort((a, b) => a.time - b.time);
+            
+            chrome.storage.local.set({ [storageKey]: bookmarks }, () => {
+              renderTimelineCheckpoints();
+            });
+          }
+        });
+      }
+    }
+  });
+
+  // Responsive checkpoint positioning during page resizing
+  window.addEventListener('resize', () => {
+    try {
+      renderTimelineCheckpoints();
+    } catch (e) {}
+  });
+
+  // Run immediate detection check
+  try {
+    const initVideo = findVideo();
+    if (initVideo && isMainVideo(initVideo)) {
+      registerVideoFrame();
+      initTimelineCheckpoints();
+    }
+  } catch (e) {}
 })();

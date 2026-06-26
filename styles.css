@@ -935,6 +935,10 @@ input:where([type='file']):focus {
   height: 60px;
 }
 
+.h-\[72px\] {
+  height: 72px;
+}
+
 .h-full {
   height: 100%;
 }
@@ -1053,6 +1057,10 @@ input:where([type='file']):focus {
 
 .resize-none {
   resize: none;
+}
+
+.resize {
+  resize: both;
 }
 
 .list-disc {

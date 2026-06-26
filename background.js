@@ -11,17 +11,45 @@ chrome.runtime.onInstalled.addListener(() => {
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   if (message.action === "REGISTER_VIDEO_FRAME") {
     if (sender.tab && sender.tab.id) {
-      activeVideoFrames[sender.tab.id] = sender.frameId || 0;
-      console.log(`VidMark: Registered video frame ${sender.frameId || 0} for tab ${sender.tab.id}`);
+      const tabId = sender.tab.id;
+      const frameId = sender.frameId || 0;
+      const newScore = message.score || 0;
+
+      const current = activeVideoFrames[tabId];
+      // Overwrite if:
+      // 1. No active frame registered yet
+      // 2. The registering frame is the SAME as the current registered frame
+      // 3. The new score is strictly greater than the current registered frame's score
+      // 4. Stale/old frame registration (e.g. older than 10 seconds)
+      const isStale = current && (Date.now() - current.timestamp > 10000);
+      if (!current || current.frameId === frameId || newScore > current.score || isStale) {
+        activeVideoFrames[tabId] = {
+          frameId: frameId,
+          score: newScore,
+          timestamp: Date.now()
+        };
+        console.log(`VidMark: Registered video frame ${frameId} for tab ${tabId} with score ${newScore}`);
+      }
       sendResponse({ success: true });
     } else {
       sendResponse({ success: false, error: "Sender tab details missing" });
     }
   } 
   
+  else if (message.action === "RESET_VIDEO_FRAME") {
+    if (sender.tab && sender.tab.id) {
+      delete activeVideoFrames[sender.tab.id];
+      console.log(`VidMark: Reset video frame registry for tab ${sender.tab.id}`);
+      sendResponse({ success: true });
+    } else {
+      sendResponse({ success: false });
+    }
+  }
+  
   else if (message.action === "GET_ACTIVE_FRAME") {
     const tabId = message.tabId;
-    const activeFrameId = activeVideoFrames[tabId] !== undefined ? activeVideoFrames[tabId] : 0;
+    const current = activeVideoFrames[tabId];
+    const activeFrameId = current ? current.frameId : 0;
     sendResponse({ frameId: activeFrameId });
   }
   
@@ -41,7 +69,8 @@ chrome.commands.onCommand.addListener((command) => {
       const activeTab = tabs[0];
       if (activeTab && activeTab.id) {
         // Query memory for the active video frame of this tab
-        const frameId = activeVideoFrames[activeTab.id] !== undefined ? activeVideoFrames[activeTab.id] : 0;
+        const current = activeVideoFrames[activeTab.id];
+        const frameId = current ? current.frameId : 0;
         
         // Send a message directly to the registered frame
         chrome.tabs.sendMessage(activeTab.id, { action: "QUICK_MARK" }, { frameId }, (response) => {
