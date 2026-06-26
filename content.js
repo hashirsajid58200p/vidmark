@@ -149,17 +149,10 @@
     return score;
   }
 
-  let cachedVideo = null;
-
   // Function to find the most appropriate video element on the page using a robust scoring system
   function findVideo() {
-    if (cachedVideo && cachedVideo.isConnected) {
-      return cachedVideo;
-    }
-
     const videos = getAllVideos();
     if (videos.length === 0) {
-      cachedVideo = null;
       return null;
     }
 
@@ -168,8 +161,7 @@
     });
 
     scoredVideos.sort((a, b) => b.score - a.score);
-    cachedVideo = scoredVideos[0].video;
-    return cachedVideo;
+    return scoredVideos[0].video;
   }
 
   // Check if a video element is likely the main content video on the page
@@ -423,16 +415,20 @@
       // we must use its parent container because inputs cannot have child elements in HTML.
       if (nativeTimeline.tagName === 'INPUT') {
         const parent = nativeTimeline.parentElement;
-        if (parent && window.getComputedStyle(parent).position === 'static') {
-          parent.style.position = 'relative';
+        if (parent) {
+          if (window.getComputedStyle(parent).position === 'static') {
+            parent.style.setProperty('position', 'relative', 'important');
+          }
+          parent.style.setProperty('overflow', 'visible', 'important');
         }
         clearUniversalTimeline();
         return parent;
       }
-      // Enforce relative/absolute position so checkpoints align precisely
+      // Enforce relative/absolute position and overflow visible so checkpoints align precisely
       if (window.getComputedStyle(nativeTimeline).position === 'static') {
-        nativeTimeline.style.position = 'relative';
+        nativeTimeline.style.setProperty('position', 'relative', 'important');
       }
+      nativeTimeline.style.setProperty('overflow', 'visible', 'important');
       clearUniversalTimeline();
       return nativeTimeline;
     }
