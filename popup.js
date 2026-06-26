@@ -509,16 +509,16 @@ function loadHistory() {
         return;
       }
 
-      container.className = "flex-1 flex flex-col p-md text-left overflow-y-auto custom-scrollbar pb-[72px]";
+      container.className = "flex-1 flex flex-col p-md text-left overflow-hidden";
       
       // Header Text
       const headerText = document.createElement("h3");
-      headerText.className = "font-headline-md text-headline-md-mobile text-on-surface font-semibold mb-sm pr-xs tracking-tight";
+      headerText.className = "font-headline-md text-headline-md-mobile text-on-surface font-semibold mb-sm pr-xs tracking-tight shrink-0";
       headerText.textContent = "Bookmarked Videos";
       container.appendChild(headerText);
 
       const listWrapper = document.createElement("div");
-      listWrapper.className = "flex flex-col gap-xs flex-1";
+      listWrapper.className = "flex flex-col gap-xs flex-1 overflow-y-auto custom-scrollbar pb-[72px]";
 
       keys.forEach(key => {
         const bookmarks = items[key] || [];
