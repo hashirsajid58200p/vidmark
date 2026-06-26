@@ -1752,10 +1752,10 @@ img {
   max-width: 190px;
 }
 
-/* Slim scrollbar for lists */
+/* Slim floating scrollbar for lists */
 
 .custom-scrollbar::-webkit-scrollbar {
-  width: 4px;
+  width: 10px;
 }
 
 .custom-scrollbar::-webkit-scrollbar-track {
@@ -1763,8 +1763,14 @@ img {
 }
 
 .custom-scrollbar::-webkit-scrollbar-thumb {
-  background: var(--color-surface-variant);
-  border-radius: 4px;
+  background-color: var(--color-surface-variant);
+  border: 3px solid transparent;
+  background-clip: padding-box;
+  border-radius: 9999px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background-color: rgb(var(--color-primary-rgb) / 0.6);
 }
 
 /* Hover states for video card per guidelines */
