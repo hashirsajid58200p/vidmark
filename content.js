@@ -94,31 +94,20 @@
 
   // Safely find all videos including inside shadow roots
   function getAllVideos() {
-    const videos = [];
-    const queue = [document];
-    const seen = new Set();
-
-    while (queue.length > 0 && seen.size < 50) {
-      const node = queue.shift();
-      if (!node || seen.has(node)) continue;
-      seen.add(node);
-
-      try {
-        const found = node.querySelectorAll('video');
-        for (const v of found) {
-          videos.push(v);
-        }
-      } catch (e) {}
-
-      try {
-        const all = node.querySelectorAll('*');
-        for (const el of all) {
-          if (el.shadowRoot && !seen.has(el.shadowRoot)) {
-            queue.push(el.shadowRoot);
+    const videos = Array.from(document.querySelectorAll('video'));
+    
+    // Check shadow roots of likely video player components
+    try {
+      const playerElements = document.querySelectorAll('[class*="player"], [id*="player"], media-controller, media-theme, media-player, video-js');
+      for (const el of playerElements) {
+        if (el.shadowRoot) {
+          const shadowVideos = el.shadowRoot.querySelectorAll('video');
+          for (const v of shadowVideos) {
+            videos.push(v);
           }
         }
-      } catch (e) {}
-    }
+      }
+    } catch (e) {}
 
     return Array.from(new Set(videos));
   }
@@ -252,17 +241,25 @@
     if (video) {
       let current = video.parentNode || video.host;
       while (current) {
-        if (current instanceof ShadowRoot || current.host !== undefined) {
-          const rootToQuery = current instanceof ShadowRoot ? current : current.shadowRoot;
-          if (rootToQuery) {
-            try {
-              const shadowMatches = rootToQuery.querySelectorAll(selector);
-              for (const m of shadowMatches) {
-                results.push(m);
-              }
-            } catch (e) {}
-          }
+        // Query the node if it's a shadow root or document fragment
+        if (current.nodeType === 11) {
+          try {
+            const matches = current.querySelectorAll(selector);
+            for (const m of matches) {
+              results.push(m);
+            }
+          } catch (e) {}
         }
+        // Also query the shadow root of this element if it has one
+        if (current.shadowRoot) {
+          try {
+            const matches = current.shadowRoot.querySelectorAll(selector);
+            for (const m of matches) {
+              results.push(m);
+            }
+          } catch (e) {}
+        }
+
         // Walk up to next parent or host
         if (current.parentNode) {
           current = current.parentNode;

@@ -20,9 +20,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
       // 1. No active frame registered yet
       // 2. The registering frame is the SAME as the current registered frame
       // 3. The new score is strictly greater than the current registered frame's score
-      // 4. Stale/old frame registration (e.g. older than 10 seconds)
-      const isStale = current && (Date.now() - current.timestamp > 10000);
-      if (!current || current.frameId === frameId || newScore > current.score || isStale) {
+      if (!current || current.frameId === frameId || newScore > current.score) {
         activeVideoFrames[tabId] = {
           frameId: frameId,
           score: newScore,
