@@ -847,10 +847,6 @@ input:where([type='file']):focus {
   margin: 16px;
 }
 
-.mb-lg {
-  margin-bottom: 24px;
-}
-
 .mb-md {
   margin-bottom: 16px;
 }
