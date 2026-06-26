@@ -293,16 +293,17 @@
     }
 
     const genericSelectors = [
-      '[class*="progress-bar"]',
-      '[class*="progress-control"]',
-      '[class*="progress-holder"]',
-      '[class*="progress"]',
-      '[class*="slider"]',
-      '[class*="scrub"]',
-      '[class*="seek"]',
-      '[class*="timeline"]',
-      '[class*="rail"]',
-      '[class*="track"]',
+      '[class*="progress-bar" i]',
+      '[class*="progress-control" i]',
+      '[class*="progress-holder" i]',
+      '[class*="progress" i]',
+      '[class*="slider" i]',
+      '[class*="scrub" i]',
+      '[class*="seek" i]',
+      '[class*="timeline" i]',
+      '[class*="rail" i]',
+      '[class*="track" i]',
+      '[class*="bar" i]',
       'input[type="range"]',
       '[role="slider"]',
       '[aria-label*="seek" i]',
@@ -566,11 +567,19 @@
     if (video) {
       if (video.dataset.vidmarkInitialized !== "true") {
         video.dataset.vidmarkInitialized = "true";
-        video.addEventListener('durationchange', renderTimelineCheckpoints);
-        video.addEventListener('loadedmetadata', renderTimelineCheckpoints);
+        video.addEventListener('durationchange', handleVideoMetadataChange);
+        video.addEventListener('loadedmetadata', handleVideoMetadataChange);
         video.addEventListener('play', handleVideoStateChange);
         video.addEventListener('pause', handleVideoStateChange);
       }
+    }
+    renderTimelineCheckpoints();
+  }
+
+  function handleVideoMetadataChange() {
+    const video = findVideo();
+    if (video && isMainVideo(video)) {
+      registerVideoFrame();
     }
     renderTimelineCheckpoints();
   }
@@ -719,6 +728,14 @@
     if (video && isMainVideo(video)) {
       registerVideoFrame();
       initTimelineCheckpoints();
+    } else {
+      try {
+        if (chrome.runtime && chrome.runtime.sendMessage) {
+          chrome.runtime.sendMessage({ action: "REGISTER_VIDEO_FRAME", score: 0 }, () => {
+            if (chrome.runtime.lastError) {}
+          });
+        }
+      } catch (e) {}
     }
   }, 3000);
 
