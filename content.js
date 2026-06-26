@@ -1,6 +1,10 @@
 (function() {
   function isContextValid() {
-    return typeof chrome !== 'undefined' && chrome.runtime && !!chrome.runtime.id;
+    return typeof chrome !== 'undefined' && 
+           chrome.runtime && 
+           !!chrome.runtime.id && 
+           typeof chrome.storage !== 'undefined' && 
+           !!chrome.storage.local;
   }
 
   if (window.vidMarkLoaded) {
