@@ -175,6 +175,37 @@
     }
   }
 
+  // Query all elements matching a selector, traversing shadow DOMs recursively
+  function queryAllIncludingShadows(selector, root = document) {
+    const results = [];
+    
+    function traverse(node) {
+      if (!node) return;
+      
+      if (node.querySelectorAll) {
+        try {
+          const matched = node.querySelectorAll(selector);
+          for (const m of matched) {
+            results.push(m);
+          }
+        } catch (e) {}
+      }
+      
+      if (node.shadowRoot) {
+        traverse(node.shadowRoot);
+      }
+      
+      let child = node.firstElementChild;
+      while (child) {
+        traverse(child);
+        child = child.nextElementSibling;
+      }
+    }
+    
+    traverse(root);
+    return results;
+  }
+
   // Search for common player progress bar elements (in both specific and generic containers, ignoring hidden state checks for initial matching)
   function findNativeTimeline() {
     const specificSelectors = [
@@ -192,8 +223,8 @@
     ];
 
     for (const selector of specificSelectors) {
-      const el = document.querySelector(selector);
-      if (el) return el;
+      const elements = queryAllIncludingShadows(selector);
+      if (elements.length > 0) return elements[0];
     }
 
     const genericSelectors = [
@@ -204,32 +235,79 @@
       '[class*="slider"]',
       '[class*="scrub"]',
       '[class*="seek"]',
-      '[class*="timeline"]'
+      '[class*="timeline"]',
+      '[class*="rail"]',
+      '[class*="track"]',
+      'input[type="range"]',
+      '[role="slider"]',
+      '[aria-label*="seek" i]',
+      '[aria-label*="progress" i]'
     ];
 
+    let candidates = [];
     for (const selector of genericSelectors) {
-      const elements = Array.from(document.querySelectorAll(selector));
-      for (const el of elements) {
-        const className = (el.className || "").toString().toLowerCase();
-        // Exclude volume bars, tooltips, buffers, loaders, etc.
-        if (
-          className.includes('volume') ||
-          className.includes('tooltip') ||
-          className.includes('buffer') ||
-          className.includes('load') ||
-          className.includes('preview') ||
-          className.includes('marker') ||
-          className.includes('checkpoint')
-        ) {
-          continue;
-        }
-        
-        if (el.tagName === 'DIV' || el.tagName === 'SPAN' || el.tagName === 'INPUT') {
-          return el;
-        }
+      try {
+        const elements = queryAllIncludingShadows(selector);
+        candidates.push(...elements);
+      } catch (e) {
+        // ignore selector errors
       }
     }
-    return null;
+
+    candidates = Array.from(new Set(candidates));
+
+    const filtered = candidates.filter(el => {
+      // 1. A timeline should not contain standard interactive control buttons
+      if (el.querySelector('button') || el.querySelector('[role="button"]')) {
+        return false;
+      }
+
+      const className = (el.className || "").toString().toLowerCase();
+      const id = (el.id || "").toString().toLowerCase();
+      const name = className + " " + id;
+
+      // 2. Exclude handles, thumbs, playheads, tooltips, buffers, loaders, volume, sound, etc.
+      if (
+        name.includes('handle') ||
+        name.includes('thumb') ||
+        name.includes('knob') ||
+        name.includes('playhead') ||
+        name.includes('tooltip') ||
+        name.includes('marker') ||
+        name.includes('buffer') ||
+        name.includes('load') ||
+        name.includes('time') ||
+        name.includes('volume') ||
+        name.includes('mute') ||
+        name.includes('sound')
+      ) {
+        return false;
+      }
+
+      // 3. Avoid parent controllers/containers with high height (controls bars are usually > 28px)
+      const rect = el.getBoundingClientRect();
+      if (rect.height > 28) {
+        return false;
+      }
+      // Narrow elements are playheads or tooltips; timeline should be relatively wide
+      if (rect.width > 0 && rect.width < 80) {
+        return false;
+      }
+
+      return true;
+    });
+
+    if (filtered.length === 0) return null;
+
+    // Find the deepest matching element (prefer the child element over its matching parent)
+    let best = filtered[0];
+    for (const el of filtered) {
+      if (best !== el && best.contains(el)) {
+        best = el;
+      }
+    }
+
+    return best;
   }
 
   // Extract page metadata images (og:image / twitter:image) to use as high-quality video covers
@@ -272,6 +350,10 @@
       // we must use its parent container because inputs cannot have child elements in HTML.
       if (nativeTimeline.tagName === 'INPUT') {
         nativeTimeline = nativeTimeline.parentElement;
+      }
+      // Enforce relative/absolute position so checkpoints align precisely
+      if (window.getComputedStyle(nativeTimeline).position === 'static') {
+        nativeTimeline.style.position = 'relative';
       }
       clearUniversalTimeline();
       return nativeTimeline;
@@ -343,17 +425,20 @@
           const dot = document.createElement('div');
           dot.className = 'vidmark-checkpoint';
           
-          dot.style.position = 'absolute';
-          dot.style.left = `${pct}%`;
-          dot.style.top = '50%';
-          dot.style.width = '8px';
-          dot.style.height = '8px';
-          dot.style.backgroundColor = themeColor;
-          dot.style.borderRadius = '50%';
-          dot.style.transform = 'translate(-50%, -50%)';
-          dot.style.boxShadow = `0 0 8px ${themeColor}, 0 0 2px rgba(255,255,255,0.8)`;
-          dot.style.zIndex = '2147483646'; 
-          dot.style.pointerEvents = 'none';
+          dot.style.setProperty('position', 'absolute', 'important');
+          dot.style.setProperty('left', `${pct}%`, 'important');
+          dot.style.setProperty('top', '50%', 'important');
+          dot.style.setProperty('width', '8px', 'important');
+          dot.style.setProperty('height', '8px', 'important');
+          dot.style.setProperty('background-color', themeColor, 'important');
+          dot.style.setProperty('border-radius', '50%', 'important');
+          dot.style.setProperty('transform', 'translate(-50%, -50%)', 'important');
+          dot.style.setProperty('box-shadow', `0 0 8px ${themeColor}, 0 0 2px rgba(255,255,255,0.8)`, 'important');
+          dot.style.setProperty('z-index', '2147483646', 'important');
+          dot.style.setProperty('pointer-events', 'none', 'important');
+          dot.style.setProperty('margin', '0', 'important');
+          dot.style.setProperty('padding', '0', 'important');
+          dot.style.setProperty('display', 'block', 'important');
 
           progressContainer.appendChild(dot);
         });

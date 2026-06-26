@@ -5,6 +5,7 @@ document.addEventListener("DOMContentLoaded", () => {
   initPopup();
   wireTabListeners();
   wireSettingsListeners();
+  initStorageListener();
 });
 
 // UI Elements mapping
@@ -18,6 +19,7 @@ const bookmarksList = document.getElementById("bookmarks-list");
 
 let currentTabId = null;
 let activeFrameId = 0; // Target sub-frame hosting the video element
+let currentStorageKey = null;
 
 // Helper to normalize the URL by stripping seek query parameters
 function getNormalizedUrl(rawUrl) {
@@ -175,6 +177,7 @@ async function initPopup() {
 
 // Show the Empty state UI
 function showEmptyState() {
+  currentStorageKey = null;
   activeState.style.display = "none";
   emptyState.style.display = "flex";
   switchTab("bookmarks", "empty");
@@ -220,10 +223,10 @@ function showActiveState(videoState) {
   }
 
   const normalizedUrl = getNormalizedUrl(videoState.url);
-  const storageKey = `vidmark_bm_${normalizedUrl}`;
+  currentStorageKey = `vidmark_bm_${normalizedUrl}`;
 
   // Load and render existing bookmarks
-  loadBookmarks(storageKey);
+  loadBookmarks(currentStorageKey);
 
   // Hook up the Add Bookmark button
   saveBtn.replaceWith(saveBtn.cloneNode(true));
@@ -237,7 +240,7 @@ function showActiveState(videoState) {
         showAlert("Bookmark Failed", errorMsg);
         return;
       }
-      loadBookmarks(storageKey);
+      loadBookmarks(currentStorageKey);
     });
   });
 
@@ -412,7 +415,7 @@ function renderBookmarks(bookmarks, storageKey) {
     entry.innerHTML = `
       <!-- Thumbnail frame canvas snapshot -->
       <div class="relative w-[56px] h-[36px] bg-surface-container-low rounded overflow-hidden shrink-0 mr-sm flex items-center justify-center border border-white/5">
-        <img class="w-full h-full object-cover" src="${thumbUrl}" alt="Cap" onerror="this.onerror=null; this.src='icons/light.png';"/>
+        <img class="w-full h-full object-cover" src="${thumbUrl}" alt="Cap" onerror="this.onerror=null; this.src='icons/light.png';" draggable="false"/>
         <div class="play-overlay absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer">
           <span class="material-symbols-outlined text-white text-[16px] play-trigger" style="font-variation-settings: 'FILL' 1;">play_arrow</span>
         </div>
@@ -534,7 +537,7 @@ function loadHistory() {
           <!-- Main link area (opens tab) -->
           <div class="flex items-center gap-sm flex-1 min-w-0 link-area">
             <div class="relative w-[64px] h-[40px] bg-surface-container-low rounded overflow-hidden shrink-0 border border-white/5">
-              <img class="w-full h-full object-cover" src="${thumbnail}" alt="Thumb" onerror="this.onerror=null; this.src='icons/light.png';"/>
+              <img class="w-full h-full object-cover" src="${thumbnail}" alt="Thumb" onerror="this.onerror=null; this.src='icons/light.png';" draggable="false"/>
             </div>
             <div class="flex-1 min-w-0 flex flex-col justify-center">
               <h4 class="font-body-md text-body-md text-on-surface font-semibold truncate leading-tight group-hover:text-primary transition-colors" title="${escapeHTML(title)}">${escapeHTML(title)}</h4>
@@ -735,6 +738,31 @@ function initTheme() {
     const themeMode = result.theme_mode || "dark";
     applyTheme(activeTheme);
     applyThemeMode(themeMode);
+  });
+}
+
+function initStorageListener() {
+  chrome.storage.onChanged.addListener((changes, areaName) => {
+    if (areaName !== "local") return;
+
+    let bookmarksChanged = false;
+    let currentVideoBookmarksChanged = false;
+
+    for (const [key, change] of Object.entries(changes)) {
+      if (key.startsWith("vidmark_bm_")) {
+        bookmarksChanged = true;
+        if (currentStorageKey && key === currentStorageKey) {
+          currentVideoBookmarksChanged = true;
+        }
+      }
+    }
+
+    if (currentVideoBookmarksChanged) {
+      loadBookmarks(currentStorageKey);
+    }
+    if (bookmarksChanged) {
+      loadHistory();
+    }
   });
 }
 

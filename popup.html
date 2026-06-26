@@ -23,7 +23,7 @@
     <div id="active-state" class="w-full h-full flex flex-col" style="display: none;">
       <header class="bg-surface text-primary flex justify-between items-center px-md py-sm w-full border-b border-outline-variant z-10 shrink-0">
         <div class="font-headline-md text-headline-md-mobile font-bold text-primary dark:text-primary flex items-center gap-2">
-          <img src="icons/light.png" class="logo-img w-6 h-6 shrink-0" alt="VidMark Logo"/>
+          <img src="icons/light.png" class="logo-img w-6 h-6 shrink-0" alt="VidMark Logo" draggable="false"/>
           VidMark
         </div>
         <div class="flex items-center gap-gutter text-on-surface-variant">
@@ -44,7 +44,7 @@
           <!-- Video Info Card -->
           <div class="m-md bg-surface-container p-gutter rounded-[16px] border border-outline-variant video-border transition-colors duration-500 video-card flex gap-gutter items-center shrink-0">
             <div id="video-thumbnail-container" class="relative w-20 h-14 bg-surface-variant rounded-lg overflow-hidden shrink-0 cursor-pointer">
-              <img id="video-thumbnail" class="w-full h-full object-cover" src="icons/light.png" alt="Video Thumbnail" onerror="this.onerror=null; this.src='icons/light.png';"/>
+              <img id="video-thumbnail" class="w-full h-full object-cover" src="icons/light.png" alt="Video Thumbnail" onerror="this.onerror=null; this.src='icons/light.png';" draggable="false"/>
               <div class="play-overlay absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 transition-opacity duration-300">
                 <span class="material-symbols-outlined text-white" style="font-variation-settings: 'FILL' 1;">play_arrow</span>
               </div>
@@ -125,10 +125,48 @@
         </div>
 
         <!-- Help View -->
-        <div id="active-help-view" class="flex-1 flex flex-col items-center justify-center p-md text-center min-h-[300px]" style="display: none;">
-          <span class="material-symbols-outlined text-[40px] text-primary mb-sm">help</span>
-          <h3 class="font-headline-md text-on-surface mb-xs">Help & Support</h3>
-          <p class="font-body-md text-on-surface-variant max-w-[240px] leading-relaxed">Learn keyboard shortcuts and get support queries. Coming soon!</p>
+        <div id="active-help-view" class="flex-1 flex flex-col p-md text-left min-h-[300px] overflow-y-auto pb-[72px]" style="display: none;">
+          <h3 class="font-headline-md text-headline-md-mobile text-on-surface font-semibold mb-sm tracking-tight flex items-center gap-xs">
+            <span class="material-symbols-outlined text-[22px] text-primary" style="font-variation-settings: 'FILL' 1;">help</span>
+            Help & Support
+          </h3>
+          
+          <div class="flex flex-col gap-sm flex-1">
+            <!-- How to Use Card -->
+            <div class="flex flex-col gap-xs p-sm bg-surface-container rounded-lg border border-outline-variant">
+              <span class="font-body-md text-on-surface font-semibold flex items-center gap-1.5">
+                <span class="material-symbols-outlined text-[18px] text-primary" style="font-variation-settings: 'FILL' 1;">play_circle</span>
+                How to Use
+              </span>
+              <ul class="text-[12px] text-on-surface-variant list-disc pl-[18px] space-y-1 mt-xs">
+                <li>Navigate to any video page (like YouTube).</li>
+                <li>Create a bookmark using the popup button or hotkey.</li>
+                <li>Add notes, jump to timestamps, or delete them anytime!</li>
+              </ul>
+            </div>
+
+            <!-- Hotkeys Card -->
+            <div class="flex flex-col gap-xs p-sm bg-surface-container rounded-lg border border-outline-variant">
+              <span class="font-body-md text-on-surface font-semibold flex items-center gap-1.5">
+                <span class="material-symbols-outlined text-[18px] text-primary" style="font-variation-settings: 'FILL' 1;">keyboard</span>
+                Default Hotkey
+              </span>
+              <p class="text-[12px] text-on-surface-variant leading-relaxed mt-xs">
+                Press <kbd class="bg-surface-variant px-1.5 py-0.5 rounded font-mono border border-outline-variant text-primary font-semibold text-[11px]">Ctrl + Shift + K</kbd> to save the current timestamp instantly.
+              </p>
+            </div>
+
+            <!-- Compatibility Card -->
+            <div class="flex flex-col gap-xs p-sm bg-surface-container rounded-lg border border-outline-variant">
+              <span class="font-body-md text-on-surface font-semibold flex items-center gap-1.5">
+                <span class="material-symbols-outlined text-[18px] text-primary" style="font-variation-settings: 'FILL' 1;">check_circle</span>
+                Compatibility
+              </span>
+              <p class="text-[12px] text-on-surface-variant leading-relaxed mt-xs">
+                Works out of the box on <strong>YouTube</strong>, <strong>Vimeo</strong>, <strong>DPlayer</strong>, and almost any standard HTML5 video player.
+              </p>
+            </div>
+          </div>
         </div>
 
       </main>
@@ -154,7 +192,7 @@
       <!-- TopNavBar (Integrated from empty.html) -->
       <header class="bg-surface w-full border-b border-outline-variant flex justify-between items-center px-md py-sm shrink-0">
         <div class="font-headline-md text-headline-md-mobile font-bold text-primary dark:text-primary flex items-center gap-2">
-          <img src="icons/light.png" class="logo-img w-6 h-6 shrink-0" alt="VidMark Logo"/>
+          <img src="icons/light.png" class="logo-img w-6 h-6 shrink-0" alt="VidMark Logo" draggable="false"/>
           VidMark
         </div>
         <div class="flex items-center gap-sm">
@@ -175,7 +213,7 @@
         <div id="empty-bookmarks-view" class="w-full flex-1 flex flex-col items-center justify-center">
           <!-- Dynamic Illustration -->
           <div class="w-44 h-44 mb-lg relative flex items-center justify-center z-10 shrink-0">
-            <img id="empty-state-illustration" class="object-contain w-full h-full drop-shadow-[0_4px_20px_rgba(var(--color-primary-container-rgb),0.25)]" src="images/cyan.png" alt="Theme Illustration"/>
+            <img id="empty-state-illustration" class="object-contain w-full h-full drop-shadow-[0_4px_20px_rgba(var(--color-primary-container-rgb),0.25)]" src="images/cyan.png" alt="Theme Illustration" draggable="false"/>
           </div>
           
           <!-- Typography Content -->
@@ -245,10 +283,48 @@
         </div>
 
         <!-- Help View -->
-        <div id="empty-help-view" class="w-full flex-1 flex flex-col items-center justify-center text-center relative z-10" style="display: none;">
-          <span class="material-symbols-outlined text-[40px] text-primary mb-sm">help</span>
-          <h3 class="font-headline-md text-on-surface mb-xs">Help & Support</h3>
-          <p class="font-body-md text-on-surface-variant max-w-[240px] leading-relaxed">Learn keyboard shortcuts and get support queries. Coming soon!</p>
+        <div id="empty-help-view" class="w-full flex-1 flex flex-col p-md text-left relative z-10 overflow-y-auto pb-[72px]" style="display: none;">
+          <h3 class="font-headline-md text-headline-md-mobile text-on-surface font-semibold mb-sm tracking-tight flex items-center gap-xs">
+            <span class="material-symbols-outlined text-[22px] text-primary" style="font-variation-settings: 'FILL' 1;">help</span>
+            Help & Support
+          </h3>
+          
+          <div class="flex flex-col gap-sm flex-1">
+            <!-- How to Use Card -->
+            <div class="flex flex-col gap-xs p-sm bg-surface-container rounded-lg border border-outline-variant">
+              <span class="font-body-md text-on-surface font-semibold flex items-center gap-1.5">
+                <span class="material-symbols-outlined text-[18px] text-primary" style="font-variation-settings: 'FILL' 1;">play_circle</span>
+                How to Use
+              </span>
+              <ul class="text-[12px] text-on-surface-variant list-disc pl-[18px] space-y-1 mt-xs">
+                <li>Navigate to any video page (like YouTube).</li>
+                <li>Create a bookmark using the popup button or hotkey.</li>
+                <li>Add notes, jump to timestamps, or delete them anytime!</li>
+              </ul>
+            </div>
+
+            <!-- Hotkeys Card -->
+            <div class="flex flex-col gap-xs p-sm bg-surface-container rounded-lg border border-outline-variant">
+              <span class="font-body-md text-on-surface font-semibold flex items-center gap-1.5">
+                <span class="material-symbols-outlined text-[18px] text-primary" style="font-variation-settings: 'FILL' 1;">keyboard</span>
+                Default Hotkey
+              </span>
+              <p class="text-[12px] text-on-surface-variant leading-relaxed mt-xs">
+                Press <kbd class="bg-surface-variant px-1.5 py-0.5 rounded font-mono border border-outline-variant text-primary font-semibold text-[11px]">Ctrl + Shift + K</kbd> to save the current timestamp instantly.
+              </p>
+            </div>
+
+            <!-- Compatibility Card -->
+            <div class="flex flex-col gap-xs p-sm bg-surface-container rounded-lg border border-outline-variant">
+              <span class="font-body-md text-on-surface font-semibold flex items-center gap-1.5">
+                <span class="material-symbols-outlined text-[18px] text-primary" style="font-variation-settings: 'FILL' 1;">check_circle</span>
+                Compatibility
+              </span>
+              <p class="text-[12px] text-on-surface-variant leading-relaxed mt-xs">
+                Works out of the box on <strong>YouTube</strong>, <strong>Vimeo</strong>, <strong>DPlayer</strong>, and almost any standard HTML5 video player.
+              </p>
+            </div>
+          </div>
         </div>
 
       </main>

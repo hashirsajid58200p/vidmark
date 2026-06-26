@@ -55,6 +55,13 @@ html, body {
     overflow: hidden;
 }
 
+/* Restrict dragging and downloading on all images */
+img {
+    user-select: none !important;
+    -webkit-user-drag: none !important;
+    pointer-events: none !important;
+}
+
 .logo-img {
     filter: var(--theme-filter, none);
 }
