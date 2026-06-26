@@ -1,7 +1,11 @@
 (function() {
+  function isContextValid() {
+    return typeof chrome !== 'undefined' && chrome.runtime && !!chrome.runtime.id;
+  }
+
   if (window.vidMarkLoaded) {
     try {
-      if (chrome.runtime && chrome.runtime.sendMessage) {
+      if (isContextValid()) {
         const video = findVideo();
         const score = video ? calculateVideoScore(video) : 0;
         chrome.runtime.sendMessage({ action: "REGISTER_VIDEO_FRAME", score }, () => {
@@ -20,7 +24,7 @@
 
   if (window.top === window) {
     try {
-      if (chrome.runtime && chrome.runtime.sendMessage) {
+      if (isContextValid()) {
         chrome.runtime.sendMessage({ action: "RESET_VIDEO_FRAME" }, () => {
           if (chrome.runtime.lastError) { /* ignore runtime disconnect */ }
         });
@@ -46,6 +50,9 @@
     try {
       const urlObj = new URL(url);
       if (urlObj.hostname.includes('youtube.com')) {
+        if (urlObj.pathname.startsWith('/shorts/')) {
+          return urlObj.pathname.split('/')[2];
+        }
         return urlObj.searchParams.get('v');
       } else if (urlObj.hostname.includes('youtu.be')) {
         return urlObj.pathname.substring(1);
@@ -60,6 +67,12 @@
   function getNormalizedUrl(rawUrl) {
     try {
       const url = new URL(rawUrl);
+      if (url.hostname.includes('youtube.com') || url.hostname.includes('youtu.be')) {
+        const videoId = getYoutubeVideoId(rawUrl);
+        if (videoId) {
+          return `https://www.youtube.com/watch?v=${videoId}`;
+        }
+      }
       url.searchParams.delete('t');
       url.searchParams.delete('time_continue');
       url.searchParams.delete('start');
@@ -146,6 +159,29 @@
       score += 50000; // Bonus if user has interacted/played it
     }
     
+    // YouTube main video bonus
+    if (v.classList.contains('html5-main-video')) {
+      score += 10000000;
+    }
+    
+    // Check if the video is inside a main player container
+    try {
+      const playerSelectors = [
+        '.html5-video-player',
+        '[class*="player-container" i]',
+        '[class*="video-player" i]',
+        '[id*="player" i]',
+        'media-player',
+        'video-js'
+      ];
+      for (const sel of playerSelectors) {
+        if (v.closest(sel)) {
+          score += 5000000;
+          break;
+        }
+      }
+    } catch (e) {}
+    
     return score;
   }
 
@@ -205,7 +241,7 @@
   // Register frame details with service worker background page
   function registerVideoFrame() {
     try {
-      if (chrome.runtime && chrome.runtime.sendMessage) {
+      if (isContextValid()) {
         const video = findVideo();
         const score = video ? calculateVideoScore(video) : 0;
         chrome.runtime.sendMessage({ action: "REGISTER_VIDEO_FRAME", score }, () => {
@@ -274,7 +310,8 @@
   // Search for common player progress bar elements (in both specific and generic containers, ignoring hidden state checks for initial matching)
   function findNativeTimeline(video) {
     const specificSelectors = [
-      '.ytp-progress-list',             // YouTube
+      '.ytp-progress-bar',              // YouTube main progress bar
+      '.ytp-progress-list',             // YouTube fallback progress list
       '.vjs-progress-holder',           // Video.js
       '.vjs-progress-control',
       '.plyr__progress',                // Plyr
@@ -333,6 +370,7 @@
       const name = className + " " + id;
 
       // 2. Exclude handles, thumbs, playheads, tooltips, buffers, loaders, volume, sound, etc.
+      // Also exclude played/elapsed dynamic bars so checkpoints are anchored to the static progress container
       if (
         name.includes('handle') ||
         name.includes('thumb') ||
@@ -351,7 +389,16 @@
         name.includes('current') ||
         name.includes('fill') ||
         name.includes('value') ||
-        name.includes('active')
+        name.includes('active') ||
+        name.includes('play-progress') ||
+        name.includes('play_progress') ||
+        name.includes('progress-play') ||
+        name.includes('progress_play') ||
+        name.includes('playbar') ||
+        name.includes('play-bar') ||
+        name.includes('progress-fill') ||
+        name.includes('progress-bar-fill') ||
+        name.includes('progress-played')
       ) {
         return false;
       }
@@ -468,12 +515,15 @@
   // Render visual markers ("Blue Dots") on the player timeline
   function renderTimelineCheckpoints() {
     try {
+      // ALWAYS clear existing checkpoints first to avoid stale dots during SPA page transitions
+      document.querySelectorAll('.vidmark-checkpoint').forEach(el => el.remove());
+
       const video = findVideo();
       if (!video || !video.duration) {
         return;
       }
 
-      document.querySelectorAll('.vidmark-checkpoint').forEach(el => el.remove());
+      if (!isContextValid()) return;
 
       const url = getNormalizedUrl(window.location.href);
       const storageKey = `vidmark_bm_${url}`;
@@ -487,6 +537,7 @@
       };
 
       chrome.storage.local.get([storageKey, "active_theme"], (result) => {
+        if (chrome.runtime.lastError || !isContextValid()) return;
         const bookmarks = result[storageKey] || [];
         const theme = result.active_theme || "cyan";
         const themeColor = themeColors[theme] || '#00d1ff';
@@ -557,9 +608,15 @@
         });
       });
     } catch (err) {
-      console.error("VidMark: Timeline dot rendering error:", err);
+      if (err.message && err.message.includes("Extension context invalidated")) {
+        // Suppress and ignore invalidated context errors
+      } else {
+        console.error("VidMark: Timeline dot rendering error:", err);
+      }
     }
   }
+
+  let playerResizeObserver = null;
 
   // Hook up video metadata/duration/play/pause listeners to re-render dots and re-register frames
   function initTimelineCheckpoints() {
@@ -571,6 +628,26 @@
         video.addEventListener('loadedmetadata', handleVideoMetadataChange);
         video.addEventListener('play', handleVideoStateChange);
         video.addEventListener('pause', handleVideoStateChange);
+        video.addEventListener('emptied', () => {
+          // Clear checkpoints immediately when video source resets
+          document.querySelectorAll('.vidmark-checkpoint').forEach(el => el.remove());
+        });
+      }
+
+      // Dynamic timeline width alignment using ResizeObserver
+      const progressContainer = getOrCreateUniversalTimeline(video);
+      if (progressContainer && typeof ResizeObserver !== 'undefined') {
+        if (!playerResizeObserver) {
+          playerResizeObserver = new ResizeObserver(() => {
+            try {
+              if (isContextValid()) {
+                renderTimelineCheckpoints();
+              }
+            } catch (e) {}
+          });
+        }
+        playerResizeObserver.disconnect();
+        playerResizeObserver.observe(progressContainer);
       }
     }
     renderTimelineCheckpoints();
@@ -597,11 +674,19 @@
 
   // Listen for messages from the popup UI or background service worker
   chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
+    if (!isContextValid()) return;
+
     if (request.action === "GET_VIDEO_STATE") {
       const video = findVideo();
       if (!video) {
         sendResponse({ found: false });
         return true; 
+      }
+
+      // Force video detection & registration sync immediately on query to solve delays
+      if (isMainVideo(video)) {
+        registerVideoFrame();
+        initTimelineCheckpoints();
       }
 
       const url = getNormalizedUrl(window.location.href);
@@ -671,6 +756,7 @@
         const storageKey = `vidmark_bm_${url}`;
         
         chrome.storage.local.get([storageKey], (result) => {
+          if (chrome.runtime.lastError || !isContextValid()) return;
           const bookmarks = result[storageKey] || [];
           const existingIndex = bookmarks.findIndex(bm => Math.floor(bm.time) === Math.floor(time));
           
@@ -682,6 +768,7 @@
             bookmarks.sort((a, b) => a.time - b.time);
             
             chrome.storage.local.set({ [storageKey]: bookmarks }, () => {
+              if (chrome.runtime.lastError || !isContextValid()) return;
               renderTimelineCheckpoints();
               sendResponse({ success: true, time });
             });
@@ -723,28 +810,59 @@
   // Initial light-weight continuous polling loop as backup for SPAs
   let lastUrl = getNormalizedUrl(window.location.href);
   
-  setInterval(() => {
+  function performDetectionCheck() {
+    if (!isContextValid()) {
+      clearInterval(detectionInterval);
+      clearInterval(spaInterval);
+      if (playerResizeObserver) {
+        playerResizeObserver.disconnect();
+      }
+      return;
+    }
     const video = findVideo();
     if (video && isMainVideo(video)) {
       registerVideoFrame();
       initTimelineCheckpoints();
     } else {
       try {
-        if (chrome.runtime && chrome.runtime.sendMessage) {
-          chrome.runtime.sendMessage({ action: "REGISTER_VIDEO_FRAME", score: 0 }, () => {
-            if (chrome.runtime.lastError) {}
-          });
-        }
+        chrome.runtime.sendMessage({ action: "REGISTER_VIDEO_FRAME", score: 0 }, () => {
+          if (chrome.runtime.lastError) {}
+        });
       } catch (e) {}
     }
-  }, 3000);
+  }
+
+  // Rapid detection check during the first 5 seconds of loading
+  let initChecksCount = 0;
+  const initInterval = setInterval(() => {
+    if (!isContextValid()) {
+      clearInterval(initInterval);
+      return;
+    }
+    performDetectionCheck();
+    initChecksCount++;
+    if (initChecksCount >= 10) {
+      clearInterval(initInterval);
+    }
+  }, 500);
+
+  const detectionInterval = setInterval(performDetectionCheck, 1000);
 
   // Detect SPA router page navigations via URL check
-  setInterval(() => {
+  const spaInterval = setInterval(() => {
+    if (!isContextValid()) {
+      clearInterval(detectionInterval);
+      clearInterval(spaInterval);
+      if (playerResizeObserver) {
+        playerResizeObserver.disconnect();
+      }
+      return;
+    }
     const currentNormalizedUrl = getNormalizedUrl(window.location.href);
     if (currentNormalizedUrl !== lastUrl) {
       lastUrl = currentNormalizedUrl;
       setTimeout(() => {
+        if (!isContextValid()) return;
         const video = findVideo();
         if (video && isMainVideo(video)) {
           registerVideoFrame();
@@ -756,7 +874,9 @@
 
   // Detect YouTube SPA navigation finish events
   document.addEventListener('yt-navigate-finish', () => {
+    if (!isContextValid()) return;
     setTimeout(() => {
+      if (!isContextValid()) return;
       const video = findVideo();
       if (video && isMainVideo(video)) {
         registerVideoFrame();
@@ -765,6 +885,7 @@
     }, 1000);
     
     setTimeout(() => {
+      if (!isContextValid()) return;
       const video = findVideo();
       if (video && isMainVideo(video)) {
         registerVideoFrame();
@@ -775,6 +896,7 @@
 
   // Direct keydown event listener as failsafe/backup for keyboard shortcuts
   document.addEventListener('keydown', (e) => {
+    if (!isContextValid()) return;
     const isMac = navigator.platform.toUpperCase().indexOf('MAC') >= 0;
     const isModifier = isMac ? e.metaKey : e.ctrlKey;
     
@@ -789,6 +911,7 @@
         const storageKey = `vidmark_bm_${url}`;
         
         chrome.storage.local.get([storageKey], (result) => {
+          if (chrome.runtime.lastError || !isContextValid()) return;
           const bookmarks = result[storageKey] || [];
           const existingIndex = bookmarks.findIndex(bm => Math.floor(bm.time) === Math.floor(time));
           
@@ -800,6 +923,7 @@
             bookmarks.sort((a, b) => a.time - b.time);
             
             chrome.storage.local.set({ [storageKey]: bookmarks }, () => {
+              if (chrome.runtime.lastError || !isContextValid()) return;
               renderTimelineCheckpoints();
             });
           }
@@ -811,15 +935,19 @@
   // Responsive checkpoint positioning during page resizing
   window.addEventListener('resize', () => {
     try {
-      renderTimelineCheckpoints();
+      if (isContextValid()) {
+        renderTimelineCheckpoints();
+      }
     } catch (e) {}
   });
 
   // Run immediate detection check
   try {
     const initVideo = findVideo();
-    if (initVideo && isMainVideo(initVideo)) {
-      registerVideoFrame();
+    if (initVideo) {
+      if (isMainVideo(initVideo)) {
+        registerVideoFrame();
+      }
       initTimelineCheckpoints();
     }
   } catch (e) {}

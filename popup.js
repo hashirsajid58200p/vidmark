@@ -22,10 +22,34 @@ let currentTabId = null;
 let activeFrameId = 0; // Target sub-frame hosting the video element
 let currentStorageKey = null;
 
+// Helper to extract YouTube video ID from URL
+function getYoutubeVideoId(url) {
+  try {
+    const urlObj = new URL(url);
+    if (urlObj.hostname.includes('youtube.com')) {
+      if (urlObj.pathname.startsWith('/shorts/')) {
+        return urlObj.pathname.split('/')[2];
+      }
+      return urlObj.searchParams.get('v');
+    } else if (urlObj.hostname.includes('youtu.be')) {
+      return urlObj.pathname.substring(1);
+    }
+  } catch (e) {
+    console.error("Error parsing URL for YouTube ID:", e);
+  }
+  return null;
+}
+
 // Helper to normalize the URL by stripping seek query parameters
 function getNormalizedUrl(rawUrl) {
   try {
     const url = new URL(rawUrl);
+    if (url.hostname.includes('youtube.com') || url.hostname.includes('youtu.be')) {
+      const videoId = getYoutubeVideoId(rawUrl);
+      if (videoId) {
+        return `https://www.youtube.com/watch?v=${videoId}`;
+      }
+    }
     url.searchParams.delete('t');
     url.searchParams.delete('time_continue');
     url.searchParams.delete('start');
